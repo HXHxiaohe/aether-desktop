@@ -11,9 +11,13 @@ public sealed class ShelfItem
 {
     public string Path { get; set; } = "";
     public DateTime Added { get; set; } = DateTime.Now;
+    /// <summary>Display name for apps dropped from the drawer (files use their file name).</summary>
+    public string? Title { get; set; }
 
-    public string Name => System.IO.Path.GetFileName(Path.TrimEnd('\\')) is { Length: > 0 } n ? n : Path;
-    public bool Exists => File.Exists(Path) || Directory.Exists(Path);
+    /// <summary>A store/packaged app ("shell:AppsFolder\…") — opens, but can't be dragged out as a file.</summary>
+    public bool IsShellApp => Path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase);
+    public string Name => Title ?? (System.IO.Path.GetFileName(Path.TrimEnd('\\')) is { Length: > 0 } n ? n : Path);
+    public bool Exists => IsShellApp || File.Exists(Path) || Directory.Exists(Path);
 }
 
 /// <summary>
@@ -47,6 +51,19 @@ public static class ShelfService
         return added;
     }
 
+    /// <summary>An app dragged from the drawer: its shortcut / exe, or a packaged app's shell path.</summary>
+    public static ShelfItem? AddApp(string path, string name)
+    {
+        bool shell = path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase);
+        if (!shell && !File.Exists(path)) return null;
+        _items.RemoveAll(i => string.Equals(i.Path, path, StringComparison.OrdinalIgnoreCase));
+        var item = new ShelfItem { Path = path, Title = name };
+        _items.Insert(0, item);
+        if (_items.Count > Max) _items.RemoveRange(Max, _items.Count - Max);
+        Save();
+        return item;
+    }
+
     public static void Remove(ShelfItem i) { _items.Remove(i); Save(); }
 
     public static void Clear() { _items.Clear(); Save(); }
@@ -59,12 +76,14 @@ public static class ShelfService
 
     public static void Open(ShelfItem i)
     {
+        if (i.IsShellApp) { Apps.AppCatalog.Launch(i.Path); return; }
         try { Interop.Native.LendForeground(); Process.Start(new ProcessStartInfo(i.Path) { UseShellExecute = true }); }
         catch (Exception ex) { Log.Info("[shelf] open " + ex.Message); }
     }
 
     public static void Reveal(ShelfItem i)
     {
+        if (i.IsShellApp) return; // no file to show
         try { Interop.Native.LendForeground(); Process.Start("explorer.exe", $"/select,\"{i.Path}\""); }
         catch (Exception ex) { Log.Info("[shelf] reveal " + ex.Message); }
     }

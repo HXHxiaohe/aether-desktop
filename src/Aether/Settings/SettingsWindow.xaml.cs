@@ -360,6 +360,7 @@ public partial class SettingsWindow : Window
         DockOpacity.Value = d.Opacity;
         DockFramePad.Value = d.FramePadding;
         DockFrame.IsChecked = d.ShowFrame;
+        DockSystemButtons.IsChecked = d.ShowSystemButtons;
         DrawerOpacity.Value = d.DrawerOpacity;
         DrawerBlur.IsChecked = d.DrawerBlur;
         DockBlur.IsChecked = d.Blur;
@@ -390,6 +391,7 @@ public partial class SettingsWindow : Window
         d.HideMode = HideAlways.IsChecked == true ? DockHideMode.Always : HideNever.IsChecked == true ? DockHideMode.Never : DockHideMode.Smart;
         d.Blur = DockBlur.IsChecked == true;
         d.ShowFrame = DockFrame.IsChecked == true;
+        d.ShowSystemButtons = DockSystemButtons.IsChecked == true;
         d.DrawerBlur = DrawerBlur.IsChecked == true;
         d.Magnify = DockMagnify.IsChecked == true;
         d.ShowLabels = DockLabels.IsChecked == true;
@@ -510,6 +512,7 @@ public partial class SettingsWindow : Window
         SettingsStore.Current.Theme.WidgetText = InkDark.IsChecked == true ? "dark" : "light";
         SettingsStore.Touch();
         foreach (var w in SettingsStore.Current.Widgets.ToList()) WidgetHost.Refresh(w.Id);
+        App.ApplyDock(); // the Dock's built-in buttons follow the same colour
     }
 
     private void OnTextShadow(object sender, RoutedEventArgs e)

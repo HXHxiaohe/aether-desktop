@@ -86,6 +86,8 @@ public sealed class DockSettings
     public int FramePadding { get; set; } = 8;
     /// <summary>false = no glass frame at all: icons float on the desktop like a frameless card.</summary>
     public bool ShowFrame { get; set; } = true;
+    /// <summary>"此电脑" and "Windows 设置" buttons next to the quick-settings button.</summary>
+    public bool ShowSystemButtons { get; set; } = true;
     /// <summary>App drawer tint, 0–100 (0 = clear).</summary>
     public int DrawerOpacity { get; set; } = 40;
     public bool DrawerBlur { get; set; } = true;

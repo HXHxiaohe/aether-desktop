@@ -36,17 +36,19 @@ public sealed class DockItemView : Grid
         }
         else
         {
+            // built-in buttons follow Settings › 卡片文字颜色 (light / dark), like the desktop cards
+            _glyph = new TextBlock
+            {
+                Text = glyph ?? "?", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
+                FontSize = size * 0.42, Foreground = Aether.Widgets.WidgetUi.InkBrush,
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            };
             var tile = new Border
             {
                 Width = size, Height = size, CornerRadius = new CornerRadius(size * 0.26),
-                Background = new SolidColorBrush(Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF)),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), BorderThickness = new Thickness(1),
-                Child = new TextBlock
-                {
-                    Text = glyph ?? "?", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
-                    FontSize = size * 0.42, Foreground = Brushes.White,
-                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-                },
+                Background = new SolidColorBrush(Aether.Widgets.WidgetUi.Ink(0x26)),
+                BorderBrush = new SolidColorBrush(Aether.Widgets.WidgetUi.Ink(0x30)), BorderThickness = new Thickness(1),
+                Child = _glyph,
             };
             visual = tile;
         }
@@ -68,6 +70,9 @@ public sealed class DockItemView : Grid
     }
 
     public bool Magnify { get; set; } = true;
+
+    private TextBlock? _glyph;
+    public void SetGlyph(string g) { if (_glyph is not null) _glyph.Text = g; }
 
     /// <summary>0 = not running, 1 = running, 2 = running and in front.</summary>
     public void SetRunning(int state)

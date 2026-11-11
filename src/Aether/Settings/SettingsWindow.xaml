@@ -517,6 +517,14 @@
                             <Border Height="1" Background="{StaticResource PanelBorderBrush}" />
                             <Grid Margin="0,12">
                                 <StackPanel>
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="显示「此电脑」和「Windows 设置」" />
+                                    <TextBlock Style="{StaticResource RowHint}" Text="放在右侧快捷设置按钮旁边" />
+                                </StackPanel>
+                                <CheckBox x:Name="DockSystemButtons" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnDockOption" />
+                            </Grid>
+                            <Border Height="1" Background="{StaticResource PanelBorderBrush}" />
+                            <Grid Margin="0,12">
+                                <StackPanel>
                                     <TextBlock Style="{StaticResource RowLabel}" Text="显示外框" />
                                     <TextBlock Style="{StaticResource RowHint}" Text="关闭后没有玻璃底板，图标直接浮在桌面上（和无框卡片一样）" />
                                 </StackPanel>

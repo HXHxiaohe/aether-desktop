@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -199,12 +199,22 @@ public sealed class DockWindow : Window
         _row.Children.Add(_runPanel);
 
         _row.Children.Add(Separator(size));
+        if (D.ShowSystemButtons)
+        {
+            var pc = new DockItemView(size, null, "") { Label = "此电脑", Magnify = D.Magnify };
+            pc.Click = () => OpenShell("explorer.exe", "shell:MyComputerFolder");
+            _row.Children.Add(pc);
+            var winSettings = new DockItemView(size, null, "") { Label = "Windows 设置", Magnify = D.Magnify };
+            winSettings.Click = () => OpenShell("ms-settings:", null);
+            _row.Children.Add(winSettings);
+        }
         var quick = new DockItemView(size, null, "") { Label = "网络 · 音量 · 亮度", Magnify = D.Magnify };
         quick.Click = () => PressWinKey(0x41); // Win+A quick settings
         _row.Children.Add(quick);
         var settings = new DockItemView(size, null, "") { Label = "Aether 设置", Magnify = D.Magnify };
         settings.Click = () => App.ShowSettings("dock");
         settings.Menu = DockMenu;
+        settings.SetGlyph(""); // palette: tells it apart from Windows Settings (gear)
         _row.Children.Add(settings);
 
         UpdateRunning();
@@ -317,7 +327,7 @@ public sealed class DockWindow : Window
     {
         Width = 1, Height = size * 0.62, Margin = new Thickness(5, 0, 5, 6),
         VerticalAlignment = VerticalAlignment.Center,
-        Fill = new SolidColorBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF)),
+        Fill = new SolidColorBrush(Aether.Widgets.WidgetUi.Ink(0x38)),
     };
 
     private List<TaskWindow> WindowsFor(AppEntry app)
@@ -435,6 +445,16 @@ public sealed class DockWindow : Window
         int idx = wins.FindIndex(w => w.Hwnd == fg);
         if (wins.Count == 1 || idx < 0) TaskWindows.ToggleOrActivate(idx < 0 ? wins[0] : wins[idx]);
         else Native.Activate(wins[(idx + 1) % wins.Count].Hwnd);
+    }
+
+    private static void OpenShell(string target, string? args)
+    {
+        try
+        {
+            Native.LendForeground();
+            Process.Start(args is null ? new ProcessStartInfo(target) { UseShellExecute = true } : new ProcessStartInfo(target, args) { UseShellExecute = true });
+        }
+        catch (Exception ex) { Log.Info("[dock] open " + ex.Message); }
     }
 
     private static void PressWinKey(byte vk)

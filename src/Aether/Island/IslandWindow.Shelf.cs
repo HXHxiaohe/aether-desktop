@@ -216,7 +216,7 @@ public sealed partial class IslandWindow
         cell.PreviewMouseLeftButtonDown += (_, e) => { down = e.GetPosition(cell); pressed = true; };
         cell.PreviewMouseMove += (_, e) =>
         {
-            if (!pressed || e.LeftButton != MouseButtonState.Pressed || !exists) return;
+            if (!pressed || e.LeftButton != MouseButtonState.Pressed || !exists || item.IsShellApp) return;
             var p = e.GetPosition(cell);
             if (Math.Abs(p.X - down.X) < 5 && Math.Abs(p.Y - down.Y) < 5) return;
             pressed = false;
@@ -272,8 +272,9 @@ public sealed partial class IslandWindow
     // ------------------------------------------------------------------ drag in
     private void OnShelfDragOver(object sender, DragEventArgs e)
     {
-        bool files = e.Data.GetDataPresent(DataFormats.FileDrop);
-        e.Effects = files ? DragDropEffects.Copy : DragDropEffects.None;
+        // files from anywhere, or apps dragged out of the drawer
+        bool files = e.Data.GetDataPresent(DataFormats.FileDrop) || e.Data.GetDataPresent(Aether.Dock.DockWindow.AppDragFormat);
+        e.Effects = files ? DragDropEffects.Copy | DragDropEffects.Link : DragDropEffects.None;
         e.Handled = true;
         if (!files) return;
         _dragLastOver = DateTime.Now;
@@ -311,9 +312,23 @@ public sealed partial class IslandWindow
         _pageBeforeDrag = -1;
         SetDropZone(false);
         e.Handled = true;
-        if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0) return;
         var at = e.GetPosition(_fx);
-        var added = ShelfService.Add(paths);
+        List<ShelfItem> added;
+        string[] paths;
+        if (e.Data.GetData(Aether.Dock.DockWindow.AppDragFormat) is string appPath
+            && AppCatalog.Apps.FirstOrDefault(a => a.Path == appPath) is { } app)
+        {
+            // an app from the drawer: keep it on the shelf as a launcher
+            var item = ShelfService.AddApp(app.Path, app.Name);
+            added = item is null ? new List<ShelfItem>() : new List<ShelfItem> { item };
+            paths = new[] { app.Path };
+        }
+        else
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0) return;
+            paths = files;
+            added = ShelfService.Add(paths);
+        }
         foreach (var a in added) _bornPaths.Add(a.Path);
         _hover = true; _leftSince = DateTime.Now; // keep it open to show where they went
         if (_page != ShelfPage) ShowPage(ShelfPage, 1);
