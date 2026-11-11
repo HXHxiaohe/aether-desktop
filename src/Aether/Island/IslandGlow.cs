@@ -86,9 +86,16 @@ public sealed class IslandGlow : FrameworkElement
     private (double W, double H, double R, bool N) _key;
     private const double Step = 2.5;
 
+    /// <summary>
+    /// While the island is growing/shrinking: don't re-sample the outline every frame, stretch
+    /// the last one to the current size instead (the light is soft — nobody sees the corners).
+    /// </summary>
+    public bool Follow { get; set; }
+
     private void EnsurePath()
     {
         double w = _surface.ActualWidth, h = _surface.ActualHeight;
+        if (Follow && _pts.Length > 0) return;
         var key = (Math.Round(w, 1), Math.Round(h, 1), Math.Round(_surface.Radius, 1), _surface.Notch);
         if (key == _key && _pts.Length > 0) return;
         _key = key;
@@ -273,6 +280,8 @@ public sealed class IslandGlow : FrameworkElement
         // ---- paint: three passes, alpha per segment quantised so pens can be reused
         var origin = _surface.TranslatePoint(new Point(0, 0), this);
         dc.PushTransform(new TranslateTransform(origin.X, origin.Y));
+        bool stretched = Follow && _key.W > 0 && _key.H > 0;
+        if (stretched) dc.PushTransform(new ScaleTransform(_surface.ActualWidth / _key.W, _surface.ActualHeight / _key.H));
         var ring = Ring();
         for (int pass = 0; pass < 3; pass++)
         {
@@ -296,6 +305,7 @@ public sealed class IslandGlow : FrameworkElement
                 dc.DrawLine(pen, _pts[i], _pts[i + 1]);
             }
         }
+        if (stretched) dc.Pop();
         dc.Pop();
     }
 

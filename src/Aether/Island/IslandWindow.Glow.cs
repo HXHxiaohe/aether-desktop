@@ -127,16 +127,23 @@ public sealed partial class IslandWindow
     private void GlowPauseForResize()
     {
         if (_glow is null) return;
-        _glowResizing = true;
         _surface.CacheMode = null;
-        _glow.Opacity = 0; // not Visibility: that re-lays-out the whole island (a dropped frame)
+        if (!_glow.Busy) return;
+        // the light rides along: repaint on every WPF frame, stretching the last outline
+        _glow.Follow = true;
+        if (!_glowResizing) System.Windows.Media.CompositionTarget.Rendering += OnGlowResizeFrame;
+        _glowResizing = true;
     }
+
+    private void OnGlowResizeFrame(object? sender, EventArgs e) => _glow.InvalidateVisual();
 
     private void GlowResume()
     {
         if (_glow is null || !_glowResizing) return;
         _glowResizing = false;
-        _glow.Opacity = 1;
+        System.Windows.Media.CompositionTarget.Rendering -= OnGlowResizeFrame;
+        _glow.Follow = false; // exact outline again
+        _glow.InvalidateVisual();
         ApplyGlowCache();
     }
 
@@ -182,7 +189,7 @@ public sealed partial class IslandWindow
         }
         if (_glow.Style.Length > 0 && _glow.Target > 0 && DateTime.Now >= _glowPreviewUntil && !(_mode == Mode.Toast && _toastUntil == _msgToastUntil) && !(Playing && S.GlowMusic))
             UpdateGlowScene(); // the reason for the light went away (preview over, music stopped)
-        if (_glowResizing) { _glow.Advance(dt); return; } // keep time moving, skip painting
+        if (_glowResizing) { _glow.Advance(dt); return; } // time moves; painting follows the resize frames
         _glow.Tick(dt);
         if (!_glow.Busy) { _glowTimer!.Stop(); _surface.CacheMode = null; return; }
         // smooth for moving light, slower for still glows (each frame repaints the island window)
