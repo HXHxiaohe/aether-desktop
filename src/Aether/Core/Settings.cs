@@ -209,6 +209,8 @@ public sealed class AppSettings
     /// <summary>Paths the user removed from the drawer; the scanner won't re-add them.</summary>
     public List<string> RemovedApps { get; set; } = new();
     public bool AppsImported { get; set; }
+    /// <summary>The in-app tutorial has been shown once (first run / after the update that added it).</summary>
+    public bool TutorialSeen { get; set; }
     /// <summary>Look for a new release on GitHub after start-up and every 12 h.</summary>
     public bool AutoCheckUpdates { get; set; } = true;
     /// <summary>Taskbar auto-hide state before Aether changed it (null = untouched).</summary>

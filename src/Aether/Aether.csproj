@@ -50,6 +50,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\Aether.ico" />
+    <Resource Include="..\..\docs\images\glow-converge.png;..\..\docs\images\glow-scan.png;..\..\docs\images\island-page1.png;..\..\docs\images\dock.png" LinkBase="Assets\Tutorial" />
     <Resource Include="Assets\icon-256.png" />
   </ItemGroup>
 

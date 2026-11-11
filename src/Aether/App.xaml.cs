@@ -150,6 +150,13 @@ public partial class App : Application
         }
         foreach (var arg in e.Args)
             if (arg.Equals("--settings", StringComparison.OrdinalIgnoreCase)) ShowSettings();
+        // First run (or the update that brought it): play the tutorial once everything is up.
+        if (!SettingsStore.Current.TutorialSeen && Environment.GetEnvironmentVariable("AETHER_ISLAND_MODE") is null)
+        {
+            var later = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+            later.Tick += (_, _) => { later.Stop(); Aether.Settings.TutorialWindow.ShowTutorial(); };
+            later.Start();
+        }
         Memory.TrimSoon(); // drop start-up garbage (catalog scan, icon decoding)
 
     }

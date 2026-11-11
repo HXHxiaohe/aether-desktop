@@ -497,6 +497,8 @@ public partial class SettingsWindow : Window
 
     private void OnQuit(object sender, RoutedEventArgs e) => App.Quit();
 
+    private void OnTutorial(object sender, RoutedEventArgs e) => TutorialWindow.ShowTutorial();
+
     // ---------- install / update ----------
     private void OnUninstall(object sender, RoutedEventArgs e)
     {
