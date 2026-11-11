@@ -134,10 +134,14 @@ public static class Updater
             // The helper is a copy of the new Aether.exe run with --apply-update: it waits for this
             // process to exit, mirrors the program files (keeping Data) and starts the new version.
             Set("准备重启更新…");
-            var target = Paths.AppDir;
-            Process.Start(new ProcessStartInfo(Path.Combine(root, "Aether.exe"),
-                $"--apply-update \"{root}\" \"{target}\" {Environment.ProcessId}")
-            { UseShellExecute = false, WorkingDirectory = root });
+            // ArgumentList quotes each part properly — a hand-built "…\" string broke on the
+            // trailing backslash of the install folder and the helper started as a normal app.
+            var psi = new ProcessStartInfo(Path.Combine(root, "Aether.exe")) { UseShellExecute = false, WorkingDirectory = root };
+            psi.ArgumentList.Add("--apply-update");
+            psi.ArgumentList.Add(root.TrimEnd('\\'));
+            psi.ArgumentList.Add(Paths.AppDir.TrimEnd('\\'));
+            psi.ArgumentList.Add(Environment.ProcessId.ToString());
+            Process.Start(psi);
             Aether.App.Quit();
         }
         catch (Exception ex)
