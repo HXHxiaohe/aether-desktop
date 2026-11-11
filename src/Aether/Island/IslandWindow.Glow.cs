@@ -129,16 +129,27 @@ public sealed partial class IslandWindow
         if (_glow is null) return;
         _glowResizing = true;
         _surface.CacheMode = null;
-        _glow.Visibility = System.Windows.Visibility.Hidden;
+        _glow.Opacity = 0; // not Visibility: that re-lays-out the whole island (a dropped frame)
     }
 
     private void GlowResume()
     {
         if (_glow is null || !_glowResizing) return;
         _glowResizing = false;
-        _glow.Visibility = System.Windows.Visibility.Visible;
-        if (_glowTimer is { IsEnabled: true } && Environment.GetEnvironmentVariable("AETHER_GLOW_NOCACHE") != "1")
-            _surface.CacheMode = new BitmapCache();
+        _glow.Opacity = 1;
+        ApplyGlowCache();
+    }
+
+    /// <summary>
+    /// Cache the island body as a bitmap while the light animates — only when collapsed: the
+    /// expanded island is big, and rasterising its cache costs a visible frame right after it opens.
+    /// </summary>
+    private void ApplyGlowCache()
+    {
+        bool want = _glowTimer is { IsEnabled: true } && !_glowResizing && _mode != Mode.Expanded
+                    && Environment.GetEnvironmentVariable("AETHER_GLOW_NOCACHE") != "1";
+        if (want && _surface.CacheMode is null) _surface.CacheMode = new BitmapCache();
+        else if (!want && _surface.CacheMode is not null) _surface.CacheMode = null;
     }
 
     private void StartGlowTimer()
@@ -152,7 +163,7 @@ public sealed partial class IslandWindow
         {
             _glowClock.Restart(); _glowTimer.Start();
             // the light repaints every frame; keep the island body as a cached bitmap meanwhile
-            if (!_glowResizing && Environment.GetEnvironmentVariable("AETHER_GLOW_NOCACHE") != "1") _surface.CacheMode = new BitmapCache();
+            ApplyGlowCache();
         }
     }
 
