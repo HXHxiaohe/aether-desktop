@@ -86,6 +86,13 @@ public abstract class WidgetWindow : Window
     { Aether.Core.Diag.Hit("Widget.Refresh");
         var content = BuildContent();
         if (Scale != 1.0) content.LayoutTransform = new ScaleTransform(Scale, Scale);
+        // A soft dark halo under the content keeps white text readable on light wallpapers.
+        content.Effect = SettingsStore.Current.Theme.TextShadow switch
+        {
+            "off" => null,
+            "strong" => new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, ShadowDepth = 0, BlurRadius = 10, Opacity = 0.9 },
+            _ => new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, ShadowDepth = 0, BlurRadius = 8, Opacity = 0.55 },
+        };
         _card.Child = content;
         ApplyCard();
     }

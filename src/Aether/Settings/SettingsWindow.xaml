@@ -149,6 +149,18 @@
                                 </StackPanel>
                                 <CheckBox x:Name="BlurSwitch" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnBlurChanged" />
                             </Grid>
+                            <Border Height="1" Background="{StaticResource PanelBorderBrush}" />
+                            <Grid Margin="0,12">
+                                <StackPanel Margin="0,0,250,0">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="文字阴影" />
+                                    <TextBlock Style="{StaticResource RowHint}" Text="给桌面卡片的白字加一圈深色柔光，浅色壁纸上也看得清" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <RadioButton x:Name="ShadowSoft" Style="{StaticResource Chip}" Content="柔和" GroupName="textshadow" Click="OnTextShadow" />
+                                    <RadioButton x:Name="ShadowStrong" Style="{StaticResource Chip}" Content="明显" GroupName="textshadow" Click="OnTextShadow" />
+                                    <RadioButton x:Name="ShadowOff" Style="{StaticResource Chip}" Content="关" GroupName="textshadow" Click="OnTextShadow" />
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </StackPanel>

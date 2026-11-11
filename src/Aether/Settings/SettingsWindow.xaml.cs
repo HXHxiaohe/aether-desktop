@@ -60,6 +60,9 @@ public partial class SettingsWindow : Window
         ToneLight.IsChecked = t.GlassTone != "dark";
         ToneDark.IsChecked = t.GlassTone == "dark";
         HexBox.Text = t.FixedColor;
+        ShadowSoft.IsChecked = t.TextShadow == "soft";
+        ShadowStrong.IsChecked = t.TextShadow == "strong";
+        ShadowOff.IsChecked = t.TextShadow == "off";
         UpdateModeUi();
 
         var clock = SettingsStore.Current.Widget("clock");
@@ -498,6 +501,14 @@ public partial class SettingsWindow : Window
     private void OnQuit(object sender, RoutedEventArgs e) => App.Quit();
 
     private void OnTutorial(object sender, RoutedEventArgs e) => TutorialWindow.ShowTutorial();
+
+    private void OnTextShadow(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        SettingsStore.Current.Theme.TextShadow = ShadowStrong.IsChecked == true ? "strong" : ShadowOff.IsChecked == true ? "off" : "soft";
+        SettingsStore.Touch();
+        foreach (var w in SettingsStore.Current.Widgets.ToList()) WidgetHost.Refresh(w.Id);
+    }
 
     // ---------- install / update ----------
     private void OnUninstall(object sender, RoutedEventArgs e)
