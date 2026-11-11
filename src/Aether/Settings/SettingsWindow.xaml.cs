@@ -77,6 +77,7 @@ public partial class SettingsWindow : Window
         BuildWidgetToggles();
         LoadAutostart();
         LoadUpdate();
+        LoadGlow();
     }
 
     private void UpdateModeUi()
@@ -332,13 +333,14 @@ public partial class SettingsWindow : Window
         var nav = page switch
         {
             "widgets" => NavWidgets,
-            "island" or "mail" => NavIsland,
+            "island" or "mail" or "glow" => NavIsland,
             "dock" => NavDock,
             "about" => NavAbout,
             _ => NavLook,
         };
         nav.IsChecked = true;
         if (page == "mail") Dispatcher.BeginInvoke(() => MailSection.BringIntoView(), System.Windows.Threading.DispatcherPriority.Loaded);
+        if (page == "glow") Dispatcher.BeginInvoke(() => GlowBox.BringIntoView(), System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private void LoadDock()

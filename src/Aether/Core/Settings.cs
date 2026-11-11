@@ -134,6 +134,19 @@ public sealed class IslandSettings
     public bool Notifications { get; set; } = true;
     /// <summary>Show what a notification says (default). Off = only which app has a new message.</summary>
     public bool NotificationContent { get; set; } = true;
+    // ---- 流光 / 动效 ----
+    public bool GlowEnabled { get; set; } = true;
+    /// <summary>scan / comet / dual / pulse / breathe / steady — the light while music plays.</summary>
+    public string GlowStyle { get; set; } = "scan";
+    /// <summary>"auto" (cover / app colour), "theme", "rainbow" or "#RRGGBB".</summary>
+    public string GlowColor { get; set; } = "auto";
+    public int GlowStrength { get; set; } = 75;
+    /// <summary>calm / balanced / snappy</summary>
+    public string GlowSpeed { get; set; } = "balanced";
+    public bool GlowMusic { get; set; } = true;
+    public bool GlowNotify { get; set; } = true;
+    public bool GlowShelf { get; set; } = true;
+    public bool ReduceMotion { get; set; }
     /// <summary>Win+Shift+S / PrtSc screenshots are saved and put on the shelf (置物架).</summary>
     public bool ScreenshotShelf { get; set; } = true;
     public int LastTimerMinutes { get; set; } = 25;

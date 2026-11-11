@@ -144,6 +144,7 @@ public sealed partial class IslandWindow : Window
         _surface.Child = _layers;
         var root = new Grid();
         root.Children.Add(_surface);
+        BuildGlow(root);
         // Thin-line mode over maximized windows: a light "home indicator" bar (the black island
         // shrunk to 5 px vanished against dark tab bars). Dark rim keeps it visible on light ones.
         _lineBar = new Border
@@ -707,6 +708,7 @@ public sealed partial class IslandWindow : Window
         }
         _toastNote = n;
         _toastUntil = DateTime.Now.AddSeconds(5);
+        MarkMessageToast(n.AppName);
         Apply();
     }
 
@@ -1103,6 +1105,7 @@ public sealed partial class IslandWindow : Window
             _toastSub.Text = "有新消息";
             _toastBarsPanel.Visibility = Visibility.Collapsed;
             _toastUntil = DateTime.Now.AddSeconds(3);
+            MarkMessageToast(fresh.Name);
         }
         UpdateCompact();
         Apply();
@@ -1458,6 +1461,7 @@ public sealed partial class IslandWindow : Window
         {
             // Only re-measure when content changed — measuring every tick kept the CPU busy.
             if (_layoutDirty && next is Mode.Compact or Mode.Expanded) { _layoutDirty = false; Resize(next, false); }
+            UpdateGlowScene(); // cheap: only sets targets; the timer runs while something glows
             return;
         }
         _mode = next;
@@ -1493,6 +1497,7 @@ public sealed partial class IslandWindow : Window
         _surface.BeginAnimation(OpacityProperty, new DoubleAnimation(next == Mode.Hidden || line ? 0 : 1, TimeSpan.FromMilliseconds(180)));
         _surface.IsHitTestVisible = next != Mode.Hidden && !line;
         _lineBar.BeginAnimation(OpacityProperty, new DoubleAnimation(line ? 1 : 0, TimeSpan.FromMilliseconds(line ? 260 : 120)) { BeginTime = TimeSpan.FromMilliseconds(line ? 120 : 0) });
+        UpdateGlowScene();
         if (next != Mode.Expanded) SystemStats.Need(this, S.ShowStats && !Playing && !GameMode.Active);
         UpdateSpectrumNeed();
     }

@@ -54,6 +54,9 @@ public sealed partial class IslandWindow
         _toastTitle.Text = m.Code;
         _toastSub.Text = $"验证码 · {(m.From.Length > 0 ? m.From : MailProviders.Name(m.Provider))} · 移上来复制";
         _toastUntil = DateTime.Now.AddSeconds(Math.Clamp(S.MailCodeSeconds, 8, 15));
+        _msgToastUntil = _toastUntil;
+        _msgToastColor = MailAmber;
+        if (S.GlowEnabled && S.GlowNotify) GlowShot("bloom", MailAmber);
         Apply();
         ScheduleCodeHide(m);
     });

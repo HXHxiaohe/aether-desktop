@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Aether.Apps;
 
 namespace Aether.Island;
@@ -131,6 +132,7 @@ public sealed partial class IslandWindow
         _toastSub.Text = "移上来拖进微信或文件夹";
         _toastUntil = _shotToastUntil = DateTime.Now.AddSeconds(4);
         Apply();
+        GlowShot("converge", IslandGlow.Vivid(Aether.Theme.ThemeService.Accent));
     });
 
     /// <summary>Opening the island straight onto one of the newer pages: fill it now.</summary>
@@ -219,6 +221,7 @@ public sealed partial class IslandWindow
             if (Math.Abs(p.X - down.X) < 5 && Math.Abs(p.Y - down.Y) < 5) return;
             pressed = false;
             var data = new DataObject(DataFormats.FileDrop, new[] { item.Path });
+            GlowShot("release", IslandGlow.Vivid(Aether.Theme.ThemeService.Accent));
             try { DragDrop.DoDragDrop(cell, data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link); }
             catch (Exception ex) { Core.Log.Info("[shelf] drag " + ex.Message); }
             ShelfService.Prune(); // moved elsewhere → forget it
@@ -315,6 +318,10 @@ public sealed partial class IslandWindow
         _hover = true; _leftSince = DateTime.Now; // keep it open to show where they went
         if (_page != ShelfPage) ShowPage(ShelfPage, 1);
         Swallow(paths.Take(4).ToList(), at);
+        // once the icons are in: light runs down both sides and meets at the bottom
+        var delay = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(360 + Math.Min(3, paths.Length - 1) * 70) };
+        delay.Tick += (_, _) => { delay.Stop(); GlowShot("converge", IslandGlow.Vivid(Aether.Theme.ThemeService.Accent)); };
+        delay.Start();
         RebuildShelf();
         Apply();
     }

@@ -223,6 +223,9 @@ public partial class App : Application
 
     public static void ResetIslandPosition() => _island?.ResetPosition();
 
+    /// <summary>Settings › 流光: play the chosen style (or a one-shot) on the island.</summary>
+    public static void PreviewGlow(string? oneShot = null) => _island?.PreviewGlow(oneShot);
+
     public static void Quit()
     {
         SettingsStore.Flush();
