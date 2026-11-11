@@ -1530,6 +1530,7 @@ public sealed partial class IslandWindow : Window
             : new CubicEase { EasingMode = EasingMode.EaseOut };
 
         if (growing || instant) FitWindow(Math.Max(w, _surface.ActualWidth), Math.Max(h, _surface.ActualHeight) + top);
+        if (!instant) GlowPauseForResize();
         _fitTimer ??= new DispatcherTimer(DispatcherPriority.Background);
         _fitTimer.Stop();
         _fitTimer.Interval = dur + TimeSpan.FromMilliseconds(60);
@@ -1547,6 +1548,7 @@ public sealed partial class IslandWindow : Window
     {
         _fitTimer!.Stop();
         FitWindow(_shape.W, _shape.H + _surface.Margin.Top);
+        GlowResume();
     }
 
     /// <summary>Size the layered window around the island (+ears, + spring overshoot room), centered.</summary>

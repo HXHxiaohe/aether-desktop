@@ -117,6 +117,30 @@ public sealed partial class IslandWindow
         if (_glow.Target > 0 || _glow.Busy) StartGlowTimer();
     }
 
+    private bool _glowResizing;
+
+    /// <summary>
+    /// While the island grows/shrinks: a bitmap cache would be re-rasterised every frame and the
+    /// outline re-sampled every frame — that made hovering stutter. Hide the light, drop the
+    /// cache, let the resize run on its own; <see cref="GlowResume"/> brings both back.
+    /// </summary>
+    private void GlowPauseForResize()
+    {
+        if (_glow is null) return;
+        _glowResizing = true;
+        _surface.CacheMode = null;
+        _glow.Visibility = System.Windows.Visibility.Hidden;
+    }
+
+    private void GlowResume()
+    {
+        if (_glow is null || !_glowResizing) return;
+        _glowResizing = false;
+        _glow.Visibility = System.Windows.Visibility.Visible;
+        if (_glowTimer is { IsEnabled: true } && Environment.GetEnvironmentVariable("AETHER_GLOW_NOCACHE") != "1")
+            _surface.CacheMode = new BitmapCache();
+    }
+
     private void StartGlowTimer()
     {
         if (_glowTimer is null)
@@ -128,7 +152,7 @@ public sealed partial class IslandWindow
         {
             _glowClock.Restart(); _glowTimer.Start();
             // the light repaints every frame; keep the island body as a cached bitmap meanwhile
-            if (Environment.GetEnvironmentVariable("AETHER_GLOW_NOCACHE") != "1") _surface.CacheMode = new BitmapCache();
+            if (!_glowResizing && Environment.GetEnvironmentVariable("AETHER_GLOW_NOCACHE") != "1") _surface.CacheMode = new BitmapCache();
         }
     }
 
@@ -147,6 +171,7 @@ public sealed partial class IslandWindow
         }
         if (_glow.Style.Length > 0 && _glow.Target > 0 && DateTime.Now >= _glowPreviewUntil && !(_mode == Mode.Toast && _toastUntil == _msgToastUntil) && !(Playing && S.GlowMusic))
             UpdateGlowScene(); // the reason for the light went away (preview over, music stopped)
+        if (_glowResizing) { _glow.Advance(dt); return; } // keep time moving, skip painting
         _glow.Tick(dt);
         if (!_glow.Busy) { _glowTimer!.Stop(); _surface.CacheMode = null; return; }
         // smooth for moving light, slower for still glows (each frame repaints the island window)

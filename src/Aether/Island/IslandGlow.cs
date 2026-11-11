@@ -65,13 +65,19 @@ public sealed class IslandGlow : FrameworkElement
     /// <summary>Advance by dt seconds and repaint.</summary>
     public void Tick(double dt)
     {
+        Advance(dt);
+        InvalidateVisual();
+    }
+
+    /// <summary>Advance time without repainting (while the island is resizing).</summary>
+    public void Advance(double dt)
+    {
         _clock += dt;
         _time += dt * Speed;
         double k = 1 - Math.Exp(-dt * (Target > Presence ? 5 : 3.5));
         Presence += (Target - Presence) * k;
         if (Target == 0 && Presence < 0.003) Presence = 0;
         _shots.RemoveAll(s => _clock - s.Start > s.Duration);
-        InvalidateVisual();
     }
 
     // ---------------- outline sampling ----------------
