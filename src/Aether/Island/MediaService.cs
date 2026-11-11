@@ -30,6 +30,8 @@ public sealed class MediaSnapshot
     public bool FromTitle { get; init; }
     /// <summary>False when we can't know the position (title-only source, song already playing when we started).</summary>
     public bool PositionKnown { get; init; } = true;
+    /// <summary>The player gives no timeline; Position comes from our own clock (started with the track).</summary>
+    public bool Clock { get; init; }
     public string TrackKey => Title + "\u0001" + Artist;
 
     /// <summary>Position extrapolated to now while playing.</summary>
@@ -37,7 +39,7 @@ public sealed class MediaSnapshot
     {
         get
         {
-            if (FromTitle) return Playing ? Position + (DateTimeOffset.Now - PositionAt) : Position;
+            if (FromTitle || Clock) return Playing ? Position + (DateTimeOffset.Now - PositionAt) : Position;
             if (!Playing || Duration <= TimeSpan.Zero) return Position;
             var p = Position + (DateTimeOffset.Now - PositionAt);
             return p > Duration ? Duration : p;
@@ -138,6 +140,12 @@ public static class MediaService
         _ = PickAsync();
     }
 
+    // own clock for sessions without a timeline (see RefreshAsync)
+    private static string? _clockKey;
+    private static TimeSpan _clockElapsed;
+    private static DateTimeOffset? _clockSince;
+    private static bool _clockFromStart;
+
     private static async Task RefreshAsync()
     { Aether.Core.Diag.Hit("Media.Refresh");
         await Gate.WaitAsync();
@@ -172,16 +180,42 @@ public static class MediaService
             }
 
             var prev = Current;
+            bool playing = info.PlaybackStatus == Status.Playing;
+            var duration = tl.EndTime - tl.StartTime;
+            var position = tl.Position;
+            var positionAt = tl.LastUpdatedTime == default ? DateTimeOffset.Now : tl.LastUpdatedTime;
+            bool clock = false, known = true;
+            if (duration <= TimeSpan.Zero)
+            {
+                // Players like 网易云 report title/artist but no timeline: keep our own clock that
+                // starts with the track and pauses with it, so synced lyrics can still follow.
+                var now = DateTimeOffset.Now;
+                if (key != _clockKey)
+                {
+                    _clockKey = key;
+                    _clockElapsed = TimeSpan.Zero;
+                    _clockSince = playing ? now : null;
+                    _clockFromStart = prev is not null; // we saw it change → it started just now
+                }
+                else if (playing && _clockSince is null) _clockSince = now;
+                else if (!playing && _clockSince is { } since) { _clockElapsed += now - since; _clockSince = null; }
+                position = _clockElapsed;
+                positionAt = _clockSince ?? now;
+                clock = true;
+                known = _clockFromStart;
+            }
             Current = new MediaSnapshot
             {
                 Title = props?.Title ?? "",
                 Artist = props?.Artist ?? "",
                 Album = props?.AlbumTitle ?? "",
                 Cover = cover,
-                Playing = info.PlaybackStatus == Status.Playing,
-                Position = tl.Position,
-                Duration = tl.EndTime - tl.StartTime,
-                PositionAt = tl.LastUpdatedTime == default ? DateTimeOffset.Now : tl.LastUpdatedTime,
+                Playing = playing,
+                Position = position,
+                Duration = duration,
+                PositionAt = positionAt,
+                Clock = clock,
+                PositionKnown = known,
                 SourceApp = s.SourceAppUserModelId ?? "",
                 CanPrevious = info.Controls.IsPreviousEnabled,
                 CanNext = info.Controls.IsNextEnabled,

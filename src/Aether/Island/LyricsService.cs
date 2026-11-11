@@ -71,7 +71,7 @@ public static class LyricsService
             var (title, artist) = Clean(m.Title, m.Artist);
             Directory.CreateDirectory(Dir);
             var file = Path.Combine(Dir, Hash(title + "|" + artist) + ".lrc");
-            var miss = file + ".none";
+            var miss = file + ".miss"; // (".none" from older versions is ignored: they didn't try title-only search)
             string? lrc = null;
             if (File.Exists(file)) lrc = await File.ReadAllTextAsync(file, ct);
             else if (File.Exists(miss) && (DateTime.Now - File.GetLastWriteTime(miss)).TotalDays < 7) return;
@@ -116,6 +116,23 @@ public static class LyricsService
             double d = item.TryGetProperty("duration", out var du) && du.ValueKind == JsonValueKind.Number ? du.GetDouble() : 0;
             double diff = duration > TimeSpan.Zero && d > 0 ? Math.Abs(d - duration.TotalSeconds) : 1;
             if (duration > TimeSpan.Zero && d > 0 && diff > 6) continue;
+            if (diff < bestDiff) { bestDiff = diff; best = synced; }
+        }
+        if (best is not null || artist.Length == 0) return best;
+
+        // 3) covers / other artists: the database often only has the original singer —
+        //    search by title alone and take a synced result of about the same length.
+        using var r3 = await Http.GetAsync($"https://lrclib.net/api/search?track_name={Q(title)}", ct);
+        if (!r3.IsSuccessStatusCode) return null;
+        using var any = JsonDocument.Parse(await r3.Content.ReadAsStringAsync(ct));
+        bestDiff = double.MaxValue;
+        foreach (var item in any.RootElement.EnumerateArray())
+        {
+            if (!item.TryGetProperty("trackName", out var tn) || !string.Equals(tn.GetString()?.Trim(), title, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!item.TryGetProperty("syncedLyrics", out var s) || s.GetString() is not { Length: > 0 } synced) continue;
+            double d = item.TryGetProperty("duration", out var du) && du.ValueKind == JsonValueKind.Number ? du.GetDouble() : 0;
+            double diff = duration > TimeSpan.Zero && d > 0 ? Math.Abs(d - duration.TotalSeconds) : 1;
+            if (duration > TimeSpan.Zero && d > 0 && diff > 12) continue;
             if (diff < bestDiff) { bestDiff = diff; best = synced; }
         }
         return best;
