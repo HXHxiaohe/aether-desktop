@@ -1,0 +1,9 @@
+bin/
+obj/
+dist/
+backups/
+*.user
+.vs/
+Data/
+sdk.path
+repo.txt

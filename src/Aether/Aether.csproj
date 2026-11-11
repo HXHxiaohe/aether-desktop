@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <!--
+      Only the WinRT types we use are projected (media session control + streams), instead of
+      the 24 MB Microsoft.Windows.SDK.NET.dll that a versioned windows TFM would ship.
+    -->
+    <CsWinRTGenerateProjection>true</CsWinRTGenerateProjection>
+    <CsWinRTWindowsMetadata>$(NuGetPackageRoot)microsoft.windows.sdk.net.ref\10.0.19041.57\winmd</CsWinRTWindowsMetadata>
+    <CsWinRTIncludes>Windows.Media.Control;Windows.Foundation;Windows.Storage.Streams.IRandomAccessStream;Windows.Storage.Streams.IRandomAccessStreamWithContentType;Windows.Storage.Streams.IRandomAccessStreamReference;Windows.Storage.Streams.IInputStream;Windows.Storage.Streams.IOutputStream;Windows.Storage.Streams.IContentTypeProvider;Windows.Storage.Streams.IBuffer;Windows.Storage.Streams.InputStreamOptions;Windows.Storage.Streams.Buffer;Windows.Media.MediaPlaybackType;Windows.Media.MediaPlaybackAutoRepeatMode;Windows.Devices.Radios</CsWinRTIncludes>
+    <CsWinRTExcludes>Windows.Foundation.Diagnostics;Windows.Storage.Streams.IRandomAccessStreamReferenceStatics;Windows.Storage.Streams.IRandomAccessStreamStatics</CsWinRTExcludes>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Aether</AssemblyName>
+    <RootNamespace>Aether</RootNamespace>
+    <ApplicationIcon>Assets\Aether.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <Product>Aether Desktop</Product>
+    <Company>Aether</Company>
+    <Copyright>Aether Desktop</Copyright>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TieredPGO>true</TieredPGO>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>    <InvariantGlobalization>false</InvariantGlobalization>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Windows.SDK.NET.Ref" Version="10.0.19041.57" ExcludeAssets="all" GeneratePathProperty="true" />
+    <PackageReference Include="System.Management" Version="10.0.12" />
+    <PackageReference Include="MailKit" Version="4.18.2" />
+  </ItemGroup>
+
+  <!-- GitHub "owner/repo" whose Releases the installed app updates from (build.ps1 -Release -Repo …). -->
+  <PropertyGroup>
+    <UpdateRepo Condition="'$(UpdateRepo)' == ''"></UpdateRepo>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="UpdateRepo" Value="$(UpdateRepo)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Aether.ico" />
+    <Resource Include="Assets\icon-256.png" />
+  </ItemGroup>
+
+</Project>
