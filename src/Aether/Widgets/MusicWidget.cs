@@ -76,10 +76,10 @@ public sealed class MusicWidget : WidgetWindow
         var coverBox = new Border
         {
             Width = 64, Height = 64, Child = _cover,
-            Background = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)),
+            Background = new SolidColorBrush(WidgetUi.Ink(0x30)),
             Clip = new RectangleGeometry(new Rect(0, 0, 64, 64), 12, 12),
         };
-        if (m.Cover is null) coverBox.Child = new TextBlock { Text = "", FontFamily = Icons, FontSize = 24, Foreground = Brushes.White, Opacity = 0.6, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        if (m.Cover is null) coverBox.Child = new TextBlock { Text = "", FontFamily = Icons, FontSize = 24, Foreground = WidgetUi.InkBrush, Opacity = 0.6, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         top.Children.Add(coverBox);
         var info = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 0, 0) };
         _title = Text(m.Title, 15, FontWeights.SemiBold, 1, Display);
@@ -107,7 +107,7 @@ public sealed class MusicWidget : WidgetWindow
         if (m.Duration > TimeSpan.Zero)
         {
             var track = new Grid { Height = 4, Margin = new Thickness(0, 12, 0, 4) };
-            track.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)) });
+            track.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = new SolidColorBrush(WidgetUi.Ink(0x30)) });
             _fill = new Border { CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Left };
             _fill.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
             track.Children.Add(_fill);

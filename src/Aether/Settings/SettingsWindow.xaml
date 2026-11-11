@@ -152,6 +152,17 @@
                             <Border Height="1" Background="{StaticResource PanelBorderBrush}" />
                             <Grid Margin="0,12">
                                 <StackPanel Margin="0,0,250,0">
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="卡片文字颜色" />
+                                    <TextBlock Style="{StaticResource RowHint}" Text="深色壁纸选浅色字，浅色壁纸选深色字（阴影会自动反过来）" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <RadioButton x:Name="InkLight" Style="{StaticResource Chip}" Content="浅色字" GroupName="widgetink" Click="OnWidgetInk" />
+                                    <RadioButton x:Name="InkDark" Style="{StaticResource Chip}" Content="深色字" GroupName="widgetink" Click="OnWidgetInk" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Height="1" Background="{StaticResource PanelBorderBrush}" />
+                            <Grid Margin="0,12">
+                                <StackPanel Margin="0,0,250,0">
                                     <TextBlock Style="{StaticResource RowLabel}" Text="文字阴影" />
                                     <TextBlock Style="{StaticResource RowHint}" Text="给桌面卡片的白字加一圈深色柔光，浅色壁纸上也看得清" TextWrapping="Wrap" />
                                 </StackPanel>

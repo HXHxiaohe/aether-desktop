@@ -68,7 +68,7 @@ public sealed class MixerWidget : WidgetWindow
         root.Children.Add(Row(null, "主音量", AudioService.Volume, AudioService.Muted,
             v => AudioService.SetVolume(v), () => AudioService.ToggleMute(), out _master, out _masterText));
         if (_apps.Count > 0)
-            root.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF)), Margin = new Thickness(0, 8, 0, 8) });
+            root.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(WidgetUi.Ink(0x22)), Margin = new Thickness(0, 8, 0, 8) });
         foreach (var app in _apps.Take(8))
         {
             var a = app;

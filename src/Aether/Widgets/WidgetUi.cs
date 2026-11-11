@@ -14,16 +14,30 @@ internal static class WidgetUi
     public static readonly FontFamily Display = new("Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI");
     public static readonly FontFamily Icons = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
+    // ---- text colour: light (white, for dark wallpapers) or dark (near-black, for light ones) ----
+    /// <summary>Settings › 外观与颜色 › 卡片文字: "dark" = dark text.</summary>
+    public static bool DarkText => Aether.Core.SettingsStore.Current.Theme.WidgetText == "dark";
+    /// <summary>The "ink" colour cards draw text, icons and lines in (alpha kept).</summary>
+    public static Color Ink(byte alpha = 0xFF) => DarkText ? Color.FromArgb(alpha, 0x16, 0x18, 0x20) : Color.FromArgb(alpha, 0xFF, 0xFF, 0xFF);
+    public static Brush InkBrush => DarkText ? DarkInk : LightInk;
+    /// <summary>Text on an ink-filled chip (the opposite of ink).</summary>
+    public static Color Paper => DarkText ? Color.FromRgb(0xF4, 0xF5, 0xF8) : Color.FromRgb(0x12, 0x13, 0x18);
+    /// <summary>Halo colour behind text: dark behind light text, light behind dark text.</summary>
+    public static Color Halo => DarkText ? Colors.White : Colors.Black;
+    private static readonly Brush LightInk = Freeze(new SolidColorBrush(Colors.White));
+    private static readonly Brush DarkInk = Freeze(new SolidColorBrush(Color.FromRgb(0x16, 0x18, 0x20)));
+    private static Brush Freeze(Brush b) { b.Freeze(); return b; }
+
     public static TextBlock Text(string t, double size, FontWeight? weight = null, double opacity = 1, FontFamily? font = null) => new()
     {
         Text = t, FontSize = size, FontWeight = weight ?? FontWeights.Normal, Opacity = opacity,
-        Foreground = Brushes.White, FontFamily = font ?? Ui, TextTrimming = TextTrimming.CharacterEllipsis,
-        Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 0, Opacity = 0.25 },
+        Foreground = WidgetUi.InkBrush, FontFamily = font ?? Ui, TextTrimming = TextTrimming.CharacterEllipsis,
+        Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 0, Opacity = 0.25, Color = Halo },
     };
 
     public static TextBlock Glyph(string g, double size, double opacity = 1) => new()
     {
-        Text = g, FontFamily = Icons, FontSize = size, Foreground = Brushes.White, Opacity = opacity,
+        Text = g, FontFamily = Icons, FontSize = size, Foreground = WidgetUi.InkBrush, Opacity = opacity,
         VerticalAlignment = VerticalAlignment.Center,
     };
 
@@ -59,11 +73,11 @@ internal static class WidgetUi
         var inner = new Border
         {
             Width = size, Height = size, CornerRadius = new CornerRadius(size / 2),
-            Background = new SolidColorBrush(filled ? Color.FromArgb(0xEE, 0xFF, 0xFF, 0xFF) : Color.FromArgb(0x1C, 0xFF, 0xFF, 0xFF)),
+            Background = new SolidColorBrush(filled ? WidgetUi.Ink(0xEE) : WidgetUi.Ink(0x1C)),
             Child = new TextBlock
             {
                 Text = glyph, FontFamily = Icons, FontSize = glyphSize,
-                Foreground = filled ? new SolidColorBrush(Color.FromRgb(0x12, 0x13, 0x18)) : Brushes.White,
+                Foreground = filled ? new SolidColorBrush(WidgetUi.Paper) : WidgetUi.InkBrush,
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
             },
         };

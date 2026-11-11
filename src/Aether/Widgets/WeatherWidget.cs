@@ -169,7 +169,7 @@ public sealed class WeatherWidget : WidgetWindow
 
     private static TextBlock WeatherGlyph(string symbol, double size) => new()
     {
-        Text = symbol, FontSize = size, Foreground = Brushes.White,
+        Text = symbol, FontSize = size, Foreground = WidgetUi.InkBrush,
         FontFamily = new FontFamily("Segoe UI Emoji, Segoe UI Symbol"),
         VerticalAlignment = VerticalAlignment.Center,
     };

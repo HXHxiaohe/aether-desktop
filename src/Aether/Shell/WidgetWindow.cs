@@ -90,8 +90,8 @@ public abstract class WidgetWindow : Window
         content.Effect = SettingsStore.Current.Theme.TextShadow switch
         {
             "off" => null,
-            "strong" => new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, ShadowDepth = 0, BlurRadius = 10, Opacity = 0.9 },
-            _ => new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, ShadowDepth = 0, BlurRadius = 8, Opacity = 0.55 },
+            "strong" => new System.Windows.Media.Effects.DropShadowEffect { Color = Aether.Widgets.WidgetUi.Halo, ShadowDepth = 0, BlurRadius = 10, Opacity = 0.9 },
+            _ => new System.Windows.Media.Effects.DropShadowEffect { Color = Aether.Widgets.WidgetUi.Halo, ShadowDepth = 0, BlurRadius = 8, Opacity = 0.55 },
         };
         _card.Child = content;
         ApplyCard();

@@ -101,9 +101,9 @@ public sealed class ClockWidget : WidgetWindow
             FontSize = size,
             FontWeight = weight,
             FontFamily = font ?? Display,
-            Foreground = Brushes.White,
+            Foreground = WidgetUi.InkBrush,
             Opacity = opacity,
-            Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 0, Opacity = 0.35, Color = Colors.Black },
+            Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 0, Opacity = 0.35, Color = WidgetUi.Halo },
         };
     }
 
@@ -202,7 +202,7 @@ public sealed class ClockWidget : WidgetWindow
         var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0) };
         var week = T(24, FontWeights.SemiBold, 1, Text);
         var month = T(15, FontWeights.Normal, 0.75, Text);
-        var line = new Rectangle { Width = 120, Height = 1, Fill = new SolidColorBrush(Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF)), Margin = new Thickness(0, 10, 0, 10), HorizontalAlignment = HorizontalAlignment.Left };
+        var line = new Rectangle { Width = 120, Height = 1, Fill = new SolidColorBrush(WidgetUi.Ink(0x66)), Margin = new Thickness(0, 10, 0, 10), HorizontalAlignment = HorizontalAlignment.Left };
         var time = T(28, FontWeights.Light);
         AccentText(time);
         right.Children.Add(week);
@@ -226,7 +226,7 @@ public sealed class ClockWidget : WidgetWindow
     {
         const double size = 176, c = size / 2;
         var canvas = new Canvas { Width = size, Height = size };
-        var face = new Ellipse { Width = size, Height = size, StrokeThickness = 1.2, Stroke = new SolidColorBrush(Color.FromArgb(0x70, 0xFF, 0xFF, 0xFF)) };
+        var face = new Ellipse { Width = size, Height = size, StrokeThickness = 1.2, Stroke = new SolidColorBrush(WidgetUi.Ink(0x70)) };
         face.SetResourceReference(Shape.FillProperty, "GlassBrush");
         canvas.Children.Add(face);
 
@@ -252,15 +252,15 @@ public sealed class ClockWidget : WidgetWindow
             canvas.Children.Add(l);
             return l;
         }
-        var hour = Hand(c * 0.48, 5, Brushes.White);
-        var min = Hand(c * 0.72, 3.2, Brushes.White);
+        var hour = Hand(c * 0.48, 5, WidgetUi.InkBrush);
+        var min = Hand(c * 0.72, 3.2, WidgetUi.InkBrush);
         var sec = Hand(c * 0.80, 1.4, null, true);
         sec.Visibility = NeedsSeconds ? Visibility.Visible : Visibility.Collapsed;
         var hub = new Ellipse { Width = 9, Height = 9 };
         Accent(hub);
         Canvas.SetLeft(hub, c - 4.5); Canvas.SetTop(hub, c - 4.5);
         canvas.Children.Add(hub);
-        canvas.Effect = new DropShadowEffect { BlurRadius = 18, ShadowDepth = 0, Opacity = 0.3 };
+        canvas.Effect = new DropShadowEffect { BlurRadius = 18, ShadowDepth = 0, Opacity = 0.3, Color = WidgetUi.Halo };
 
         var date = T(15, FontWeights.Normal, 0.9, Text);
         date.HorizontalAlignment = HorizontalAlignment.Center;
@@ -304,7 +304,7 @@ public sealed class ClockWidget : WidgetWindow
     {
         const double size = 168, stroke = 7, r = (size - stroke) / 2, c = size / 2;
         var grid = new Grid { Width = size, Height = size };
-        grid.Children.Add(new Ellipse { Stroke = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), StrokeThickness = stroke });
+        grid.Children.Add(new Ellipse { Stroke = new SolidColorBrush(WidgetUi.Ink(0x30)), StrokeThickness = stroke });
         var arc = new Path { StrokeThickness = stroke, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
         arc.SetResourceReference(Shape.StrokeProperty, "AccentBrush");
         grid.Children.Add(arc);
@@ -388,7 +388,7 @@ public sealed class ClockWidget : WidgetWindow
         var script = new FontFamily("Segoe Script, Ink Free, Gabriola");
         var week = new TextBlock
         {
-            FontFamily = script, FontSize = 74, Foreground = Brushes.White, Opacity = 0.32,
+            FontFamily = script, FontSize = 74, Foreground = WidgetUi.InkBrush, Opacity = 0.32,
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, -8, 0, 0),
         };

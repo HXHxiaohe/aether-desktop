@@ -32,7 +32,7 @@ public sealed class NotesWidget : WidgetWindow
     private static TextBox Box(string text, double size, bool multiline, FontWeight? weight = null) => new()
     {
         Text = text, FontSize = size, FontFamily = Ui, FontWeight = weight ?? FontWeights.Normal,
-        Foreground = Brushes.White, CaretBrush = Brushes.White, Background = Brushes.Transparent,
+        Foreground = WidgetUi.InkBrush, CaretBrush = WidgetUi.InkBrush, Background = Brushes.Transparent,
         BorderThickness = new Thickness(0), Padding = new Thickness(0),
         AcceptsReturn = multiline, TextWrapping = multiline ? TextWrapping.Wrap : TextWrapping.NoWrap,
         SelectionBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x8C, 0x9E, 0xFF)),
@@ -108,8 +108,8 @@ public sealed class NotesWidget : WidgetWindow
                 Content = new Border
                 {
                     Width = 16, Height = 16, CornerRadius = new CornerRadius(5), BorderThickness = new Thickness(1.4),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(0x99, 0xFF, 0xFF, 0xFF)),
-                    Child = it.Done ? new TextBlock { Text = "", FontFamily = Icons, FontSize = 10, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } : null,
+                    BorderBrush = new SolidColorBrush(WidgetUi.Ink(0x99)),
+                    Child = it.Done ? new TextBlock { Text = "", FontFamily = Icons, FontSize = 10, Foreground = WidgetUi.InkBrush, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } : null,
                 },
             };
             if (it.Done) ((Border)check.Content).SetResourceReference(Border.BackgroundProperty, "AccentBrush");

@@ -60,6 +60,8 @@ public partial class SettingsWindow : Window
         ToneLight.IsChecked = t.GlassTone != "dark";
         ToneDark.IsChecked = t.GlassTone == "dark";
         HexBox.Text = t.FixedColor;
+        InkLight.IsChecked = t.WidgetText != "dark";
+        InkDark.IsChecked = t.WidgetText == "dark";
         ShadowSoft.IsChecked = t.TextShadow == "soft";
         ShadowStrong.IsChecked = t.TextShadow == "strong";
         ShadowOff.IsChecked = t.TextShadow == "off";
@@ -501,6 +503,14 @@ public partial class SettingsWindow : Window
     private void OnQuit(object sender, RoutedEventArgs e) => App.Quit();
 
     private void OnTutorial(object sender, RoutedEventArgs e) => TutorialWindow.ShowTutorial();
+
+    private void OnWidgetInk(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        SettingsStore.Current.Theme.WidgetText = InkDark.IsChecked == true ? "dark" : "light";
+        SettingsStore.Touch();
+        foreach (var w in SettingsStore.Current.Widgets.ToList()) WidgetHost.Refresh(w.Id);
+    }
 
     private void OnTextShadow(object sender, RoutedEventArgs e)
     {

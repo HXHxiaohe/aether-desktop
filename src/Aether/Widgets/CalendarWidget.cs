@@ -83,7 +83,7 @@ public sealed class CalendarWidget : WidgetWindow
             var num = Text(day.Day.ToString(), 13, today ? FontWeights.Bold : FontWeights.Normal, inMonth ? (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? 0.7 : 0.95) : 0.25);
             num.HorizontalAlignment = HorizontalAlignment.Center;
             num.VerticalAlignment = VerticalAlignment.Center;
-            if (today) { num.Foreground = new SolidColorBrush(Color.FromRgb(0x12, 0x13, 0x18)); num.Effect = null; }
+            if (today) { num.Foreground = new SolidColorBrush(WidgetUi.Paper); num.Effect = null; }
             cell.Children.Add(num);
             grid.Children.Add(cell);
         }

@@ -20,6 +20,8 @@ public sealed class ThemeSettings
     public ColorMode Mode { get; set; } = ColorMode.Manual;
     /// <summary>Dark halo behind desktop-card text so white text reads on light wallpapers: soft / strong / off.</summary>
     public string TextShadow { get; set; } = "soft";
+    /// <summary>Desktop-card text colour: "light" (white, default) or "dark" (for light wallpapers).</summary>
+    public string WidgetText { get; set; } = "light";
     /// <summary>Accent last picked from the desktop.</summary>
     public string PickedColor { get; set; } = "#8C9EFF";
     public string FixedColor { get; set; } = "#8C9EFF";

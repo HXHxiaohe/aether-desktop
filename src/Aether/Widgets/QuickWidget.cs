@@ -83,7 +83,7 @@ public sealed class QuickWidget : WidgetWindow
             p.Children.Add(t);
             var b = new Button { Template = Plain(), Content = new Border { Padding = new Thickness(0, 4, 0, 6), CornerRadius = new CornerRadius(10), Background = Brushes.Transparent, Child = p }, Focusable = false, Cursor = Cursors.Hand, ToolTip = path, Margin = new Thickness(0, 0, 0, 4) };
             var bg = (Border)b.Content;
-            b.MouseEnter += (_, _) => bg.Background = new SolidColorBrush(Color.FromArgb(0x1C, 0xFF, 0xFF, 0xFF));
+            b.MouseEnter += (_, _) => bg.Background = new SolidColorBrush(WidgetUi.Ink(0x1C));
             b.MouseLeave += (_, _) => bg.Background = Brushes.Transparent;
             b.Click += (_, _) => AppCatalog.Launch(path);
             var menu = new ContextMenu();
