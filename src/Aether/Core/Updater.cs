@@ -32,11 +32,15 @@ public static class Updater
     public static event Action? Changed;
 
     private static DispatcherTimer? _timer;
-    private static readonly HttpClient Http = MakeClient();
+    private static readonly HttpClient Http = MakeClient(TimeSpan.FromSeconds(30));
+    // Downloads: no overall limit (GitHub can be slow from some networks); a stall check
+    // below gives up only when nothing arrives for a while.
+    private static readonly HttpClient Download = MakeClient(System.Threading.Timeout.InfiniteTimeSpan);
+    private static readonly TimeSpan Stall = TimeSpan.FromSeconds(40);
 
-    private static HttpClient MakeClient()
+    private static HttpClient MakeClient(TimeSpan timeout)
     {
-        var c = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var c = new HttpClient { Timeout = timeout };
         c.DefaultRequestHeaders.UserAgent.ParseAdd("Aether-Desktop-Updater");
         c.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return c;
@@ -107,20 +111,14 @@ public static class Updater
             Directory.CreateDirectory(work);
             var zip = Path.Combine(work, "update.zip");
             Set($"正在下载 {rel.Version}…");
-            using (var resp = await Http.GetAsync(rel.ZipUrl, HttpCompletionOption.ResponseHeadersRead))
+            for (int attempt = 1; ; attempt++)
             {
-                resp.EnsureSuccessStatusCode();
-                long total = resp.Content.Headers.ContentLength ?? rel.Size;
-                await using var src = await resp.Content.ReadAsStreamAsync();
-                await using var dst = File.Create(zip);
-                var buf = new byte[81920];
-                long done = 0; int n, lastPct = -1;
-                while ((n = await src.ReadAsync(buf)) > 0)
+                try { await DownloadAsync(rel, zip, attempt); break; }
+                catch (Exception ex) when (attempt < 3 && ex is HttpRequestException or IOException or OperationCanceledException)
                 {
-                    await dst.WriteAsync(buf.AsMemory(0, n));
-                    done += n;
-                    int pct = total > 0 ? (int)(done * 100 / total) : 0;
-                    if (pct != lastPct && pct % 5 == 0) { lastPct = pct; Set($"正在下载 {rel.Version}… {pct}%"); }
+                    Log.Info($"[update] download attempt {attempt}: {ex.Message}");
+                    Set($"下载中断，正在重试（{attempt + 1}/3）…");
+                    await Task.Delay(2000);
                 }
             }
             Set("正在解压…");
@@ -147,9 +145,41 @@ public static class Updater
         catch (Exception ex)
         {
             Log.Error("update", ex);
-            Set("更新失败：" + ex.Message);
+            Set(ex is OperationCanceledException or HttpRequestException
+                ? "更新失败：连不上 GitHub 或下载太慢（已重试 3 次）。可以稍后再试，或到 Release 页面手动下载 zip。"
+                : "更新失败：" + ex.Message);
         }
         finally { Busy = false; }
+    }
+
+    private static async Task DownloadAsync(Release rel, string zip, int attempt)
+    {
+        // Cancelled only when no bytes arrive for `Stall` (connecting included).
+        using var stall = new System.Threading.CancellationTokenSource(Stall);
+        using var resp = await Download.GetAsync(rel.ZipUrl, HttpCompletionOption.ResponseHeadersRead, stall.Token);
+        resp.EnsureSuccessStatusCode();
+        long total = resp.Content.Headers.ContentLength ?? rel.Size;
+        await using var src = await resp.Content.ReadAsStreamAsync(stall.Token);
+        await using var dst = File.Create(zip);
+        var buf = new byte[81920];
+        long done = 0; int n, lastPct = -1;
+        var sw = Stopwatch.StartNew();
+        stall.CancelAfter(Stall);
+        while ((n = await src.ReadAsync(buf, stall.Token)) > 0)
+        {
+            stall.CancelAfter(Stall);
+            await dst.WriteAsync(buf.AsMemory(0, n));
+            done += n;
+            int pct = total > 0 ? (int)(done * 100 / total) : 0;
+            if (pct != lastPct && pct % 5 == 0)
+            {
+                lastPct = pct;
+                double kbs = done / 1024.0 / Math.Max(0.5, sw.Elapsed.TotalSeconds);
+                var speed = kbs >= 1024 ? $"{kbs / 1024:0.0} MB/s" : $"{kbs:0} KB/s";
+                Set($"正在下载 {rel.Version}… {pct}%（{speed}）" + (attempt > 1 ? $" 第 {attempt} 次" : ""));
+            }
+        }
+        if (total > 0 && done < total) throw new IOException($"只下载到 {done * 100 / total}%");
     }
 
     /// <summary>Runs in the new version's temp copy: wait, copy, restart. Returns the exit code.</summary>
