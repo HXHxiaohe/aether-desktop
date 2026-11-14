@@ -140,7 +140,7 @@ public sealed partial class IslandWindow
         _glow.Target = style.Length > 0 ? 1 : 0;
         _glow.BandCount = S.GlowBands;
         // styles whose light leaves the outline need room around the island
-        double room = style.Length > 0 && IslandGlow.Spills(style) && !S.ReduceMotion ? 22 : 0;
+        double room = style.Length > 0 && IslandGlow.Spills(style) && !S.ReduceMotion ? (style == "drip" ? 36 : style == "liquid" ? 30 : 22) : 0; // drops fall further
         if (room != _glowRoom)
         {
             _glowRoom = room;

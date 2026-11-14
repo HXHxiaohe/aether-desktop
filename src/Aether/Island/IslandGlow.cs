@@ -53,11 +53,11 @@ public sealed class IslandGlow : FrameworkElement
 
     /// <summary>Styles that move (reduce motion turns these into a still glow; they need smooth frames).</summary>
     public static bool IsMoving(string style) => style is "scan" or "comet" or "dual" or "pulse" or "prism" or "aurora" or "warp" or "arc" or "bloomloop" or "embers" or "heartbeat" or "vortex" or "spectrum"
-        or "particles" or "sheen" or "ripple" or "gravity";
+        or "particles" or "sheen" or "ripple" or "gravity" or "drip" or "liquid";
     /// <summary>Slow, soft styles look the same at 15 fps; saves a quarter of the repaints.</summary>
-    public static bool IsSlow(string style) => style is "aurora" or "ripple" or "particles" or "gravity" or "sheen" or "steady" or "embers";
+    public static bool IsSlow(string style) => style is "aurora" or "ripple" or "particles" or "gravity" or "sheen" or "steady" or "embers" or "liquid";
     /// <summary>Styles whose light leaves the outline and needs room around the island.</summary>
-    public static bool Spills(string style) => style is "particles" or "ripple" or "aurora";
+    public static bool Spills(string style) => style is "particles" or "ripple" or "aurora" or "drip" or "liquid";
     /// <summary>Extra room (DIP) the window should leave around the island right now.</summary>
     public double Outset => Presence > 0.003 && Spills(Style) && !Reduce ? 22 : 0;
     /// <summary>Styles drawn in rainbow colours along the outline regardless of the colour setting.</summary>
@@ -71,7 +71,7 @@ public sealed class IslandGlow : FrameworkElement
     private double _time;      // seconds since start, scaled by Speed
     private double _clock;     // real seconds
 
-    public bool Busy => Presence > 0.003 || Target > 0 || _shots.Count > 0 || _parts.Count > 0;
+    public bool Busy => Presence > 0.003 || Target > 0 || _shots.Count > 0 || _parts.Count > 0 || _drops.Count > 0;
     public bool HasShots => _shots.Count > 0;
 
     public void Play(string kind, Color color)
@@ -98,6 +98,7 @@ public sealed class IslandGlow : FrameworkElement
         if (Target == 0 && Presence < 0.003) Presence = 0;
         _shots.RemoveAll(s => _clock - s.Start > s.Duration);
         StepParticles(dt);
+        StepDrops(dt);
     }
 
     // ---------------- 粒子溢出 ----------------
@@ -138,6 +139,30 @@ public sealed class IslandGlow : FrameworkElement
     }
 
     public bool HasParticles => _parts.Count > 0;
+
+    // ---------------- 滴落 ----------------
+    private sealed class DripDrop { public double X, Y0, R, Age, Hang; public Color Color; }
+    private readonly List<DripDrop> _drops = new();
+    private double _dripNext;
+
+    private void StepDrops(double dt)
+    {
+        bool on = Style == "drip" && Presence > 0.05 && !Reduce && _pts.Length > 8;
+        if (on)
+        {
+            _dripNext -= dt * Speed;
+            if (_dripNext <= 0)
+            {
+                _dripNext = 0.7 + _rng.NextDouble() * 1.1;
+                // somewhere along the bottom edge, away from the rounded ends
+                double w = _surface.ActualWidth, h = _surface.ActualHeight;
+                double x = w * (0.22 + 0.56 * _rng.NextDouble());
+                _drops.Add(new DripDrop { X = x, Y0 = h, R = 2.2 + _rng.NextDouble() * 1.6, Hang = 0.55 + _rng.NextDouble() * 0.5, Color = Color });
+            }
+        }
+        foreach (var d in _drops) d.Age += dt;
+        _drops.RemoveAll(d => d.Age > d.Hang + 0.6);
+    }
 
     // ---------------- outline sampling ----------------
     private Point[] _pts = Array.Empty<Point>();
@@ -276,6 +301,8 @@ public sealed class IslandGlow : FrameworkElement
                     Base(0.1 * P);
                     break;
                 case "gravity": // 流淌: drawn entirely in DrawSpill (width varies along the outline)
+                case "drip":    // 滴落: same heavier-below rim, plus drops (drawn in DrawSpill)
+                case "liquid":  // 垂坠: the island's lower edge sags like liquid (drawn in DrawSpill)
                     break;
                 // ---- 醒目
                 case "warp": // 曲率加速: speeds up, the tail stretches, flash at the finish
@@ -565,6 +592,90 @@ public sealed class IslandGlow : FrameworkElement
                         i => (0.18 + 0.5 * Weight(i) + amp[i] + 0.6 * pool * Bottom(i)) * alphas[ps] * strength * P,
                         _ => color);
                 }
+            }
+        }
+
+        if (Style == "liquid" && !Follow)
+        {
+            // 垂坠: the island hangs like a drop of liquid — the top stays straight, the lower edge
+            // sags (most in the middle) with slow waves running along it. The sagging part is filled
+            // with the island's own colour, and a thin glow follows the new outline.
+            int n = _pts.Length;
+            double w = Math.Max(1, _surface.ActualWidth), h = Math.Max(1, _surface.ActualHeight);
+            double amp = Math.Clamp(h * 0.3, 6, 20); // compact ~10 px, expanded up to 20
+            var q = new Point[n];
+            for (int i = 0; i < n; i++)
+            {
+                double v = Math.Clamp(_pts[i].Y / h, 0, 1);
+                double lower = v > 0.45 ? Math.Pow((v - 0.45) / 0.55, 2) : 0;
+                double x = Math.Clamp(_pts[i].X / w, 0, 1);
+                double belly = 0.55 + 0.45 * Math.Sin(Math.PI * x);                 // heavier in the middle
+                double wave = 0.62 + 0.24 * Math.Sin(2 * Math.PI * (x * 1.6 + _time * 0.12))
+                                   + 0.14 * Math.Sin(2 * Math.PI * (x * 3.3 - _time * 0.21));
+                q[i] = new Point(_pts[i].X, _pts[i].Y + lower * belly * wave * amp * P);
+            }
+            // the sag itself, in the island's colour (between the real outline and the sagging one)
+            var skirt = new StreamGeometry();
+            using (var ctx = skirt.Open())
+            {
+                ctx.BeginFigure(q[0], true, true);
+                ctx.PolyLineTo(q, true, false);
+                var back = new Point[n];
+                for (int i = 0; i < n; i++) { var p0 = _pts[n - 1 - i]; back[i] = p0.Y > h * 0.5 ? new Point(p0.X, p0.Y - 2) : p0; } // overlap 2 px: no seam
+                ctx.PolyLineTo(back, true, false);
+            }
+            skirt.Freeze();
+            // a gradient fill would restart over the skirt's own bounds; use its bottom colour instead`r`n            Brush skirtFill = _surface.Fill is GradientBrush gb && gb.GradientStops.Count > 0 ? new SolidColorBrush(gb.GradientStops[gb.GradientStops.Count - 1].Color) : _surface.Fill;`r`n            dc.DrawGeometry(skirtFill, null, skirt);
+            // the glow along the new outline
+            var line = new StreamGeometry();
+            using (var ctx = line.Open()) { ctx.BeginFigure(q[0], false, _closed); ctx.PolyLineTo(q, true, true); }
+            line.Freeze();
+            double shimmer = 0.85 + 0.15 * Math.Sin(_time * 1.3);
+            for (int pass = 0; pass < 3; pass++)
+            {
+                double a = (pass == 0 ? 0.12 : pass == 1 ? 0.3 : 0.9) * 0.75 * shimmer * strength * P;
+                int lvl = Math.Min(Levels - 1, (int)(Math.Min(1, a) * (Levels - 1) + 0.5));
+                if (lvl <= 0) continue;
+                var pens = PensFor(pass, PassWidth[pass] * (pass == 2 ? 1.1 : 0.8), color);
+                dc.DrawGeometry(null, rainbow ? RainbowRingPen(PassWidth[pass], a) : pens[lvl], line);
+            }
+        }
+
+        if (Style == "drip" && _nrm.Length == _pts.Length)
+        {
+            // 滴落: the light is heavier towards the bottom; now and then a drop swells under the
+            // island, lets go and falls, fading out.
+            int n = _pts.Length;
+            double h = Math.Max(1, _surface.ActualHeight);
+            double Weight(int i) { double v = Math.Clamp(_pts[i].Y / h, 0, 1); return v * v; }
+            double[] baseW = { 4, 2.2, 0.8 }, addW = { 10, 4, 1.2 }, alphas = { 0.12, 0.3, 0.85 };
+            for (int pass = 0; pass < 3; pass++)
+            {
+                int ps = pass;
+                DrawRibbon(dc, _pts, _nrm, 0, n - 1, 4,
+                    i => baseW[ps] + addW[ps] * Weight(i),
+                    i => (0.2 + 0.6 * Weight(i)) * alphas[ps] * strength * P,
+                    _ => color);
+            }
+            foreach (var d in _drops)
+            {
+                double a, rx, ry, y;
+                if (d.Age < d.Hang)
+                {
+                    double k = d.Age / d.Hang;                    // swelling, still attached
+                    a = 0.9; rx = d.R * (0.6 + 0.4 * k); ry = d.R * (0.6 + 0.9 * k); y = d.Y0 + ry * 0.6;
+                }
+                else
+                {
+                    double tf = d.Age - d.Hang;                   // falling: y = ½gt²
+                    double fall = 0.5 * 260 * tf * tf;
+                    a = Math.Max(0, 1 - fall / 34);
+                    rx = d.R * 0.8; ry = d.R * 1.6; y = d.Y0 + d.R + fall;
+                }
+                if (a <= 0) continue;
+                var c = d.Color;
+                dc.DrawEllipse(new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(a * 0.25 * strength * P, 0, 1)), c.R, c.G, c.B)), null, new Point(d.X, y), rx * 2.6, ry * 2.2);
+                dc.DrawEllipse(new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(a * 0.95 * strength * P, 0, 1)), c.R, c.G, c.B)), null, new Point(d.X, y), rx, ry);
             }
         }
 
