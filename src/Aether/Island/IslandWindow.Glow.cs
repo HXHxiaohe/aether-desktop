@@ -16,6 +16,7 @@ public sealed partial class IslandWindow
     private DateTime _msgToastUntil, _glowPreviewUntil;
     /// <summary>Debug demo style: shown instead of the setting, never saved.</summary>
     private string? _demoStyle;
+    private double _glowRoom;
     private Color _msgToastColor;
 
     private static readonly Color WeChatGreen = Color.FromRgb(0x2B, 0xE0, 0x7E);
@@ -137,6 +138,14 @@ public sealed partial class IslandWindow
             _glow.Color = GlowColor(natural);
         }
         _glow.Target = style.Length > 0 ? 1 : 0;
+        _glow.BandCount = S.GlowBands;
+        // styles whose light leaves the outline need room around the island
+        double room = style.Length > 0 && IslandGlow.Spills(style) && !S.ReduceMotion ? 22 : 0;
+        if (room != _glowRoom)
+        {
+            _glowRoom = room;
+            FitWindow(Math.Max(_shape.W, _surface.ActualWidth), Math.Max(_shape.H, _surface.ActualHeight) + _surface.Margin.Top);
+        }
         if (_glow.Target > 0 || _glow.Busy) StartGlowTimer();
     }
 
@@ -217,7 +226,9 @@ public sealed partial class IslandWindow
         _glow.Tick(dt);
         if (!_glow.Busy) { _glowTimer!.Stop(); _surface.CacheMode = null; return; }
         // smooth for moving light, slower for still glows (each frame repaints the island window)
-        var want = TimeSpan.FromMilliseconds(_glow.NeedsFastFrames ? (_glow.HasShots ? 33 : 50) : 100);
+        var want = TimeSpan.FromMilliseconds(_glow.HasShots ? 33
+            : !_glow.NeedsFastFrames ? 100
+            : IslandGlow.IsSlow(_glow.Style) ? 66 : 50);
         if (_glowTimer!.Interval != want) _glowTimer.Interval = want;
     }
 }

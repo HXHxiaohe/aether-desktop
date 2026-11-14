@@ -1557,7 +1557,8 @@ public sealed partial class IslandWindow : Window
     /// <summary>Size the layered window around the island (+ears, + spring overshoot room), centered.</summary>
     private void FitWindow(double w, double bottom)
     { Aether.Core.Diag.Hit("Island.FitWindow");
-        double ww = Math.Ceiling(w * 1.08 + 40), hh = Math.Ceiling(Math.Max(bottom, 8) * 1.1 + 12);
+        // _glowRoom: light styles that spill off the outline (particles / ripples) need space around it
+        double ww = Math.Ceiling(w * 1.08 + 40 + 2 * _glowRoom), hh = Math.Ceiling(Math.Max(bottom, 8) * 1.1 + 12 + _glowRoom);
         if (Math.Abs(Width - ww) < 1 && Math.Abs(Height - hh) < 1) return;
         Width = ww;
         Height = hh;

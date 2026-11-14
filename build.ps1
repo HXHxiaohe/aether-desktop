@@ -12,6 +12,15 @@ if ($Install -or $Release) { $Publish = $true }
 $repoFile = Join-Path $PSScriptRoot 'repo.txt'
 if (-not $Repo -and (Test-Path $repoFile)) { $Repo = (Get-Content $repoFile -TotalCount 1).Trim() }
 if ($Release -and -not $Repo) { throw 'Release needs -Repo owner/name' }
+# Local installs without -Version get the last published version (from ..\Aether-public), so the
+# updater never sees an older release as "newer" than a dev build (that downgraded once).
+if ($Install -and -not $Version) {
+    $pubDir = Join-Path (Split-Path $PSScriptRoot) 'Aether-public'
+    if (Test-Path (Join-Path $pubDir '.git')) {
+        $msg = & 'C:\Program Files\Git\cmd\git.exe' -C $pubDir log -1 --format=%s 2>$null
+        if ($msg -match '(\d+\.\d+\.\d+)') { $Version = $Matches[1] }
+    }
+}
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot

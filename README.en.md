@@ -74,7 +74,7 @@ Light that flows along the island's outline. Settings › 灵动岛 › **流光
 
 ![Glow: scan band](docs/images/glow-scan.png)
 
-- **While music plays**: light flows around the outline in the album's colour. 15 styles in five groups — classic (scan band, breathe, steady), bold (comet, warp, arc sparks, bloom), neon (prism, aurora, twin streams), natural (embers, heartbeat, vortex), spectrum (sound pulse, spectrum ring)
+- **While music plays**: light flows around the outline in the album's colour. 15 styles in five groups — flow (scan band with 1–3 bands, comet, warp, trickle: thin on top and heavier below, light runs down both sides and pools), colour (prism, aurora: a wavy green-teal-violet curtain floating outside the island), sparks (particles drifting off, arc sparks, embers), rhythm (ripples spreading out, heartbeat, sound pulse, spectrum ring), texture (glass sheen sweeping across, steady)
 - **New message**: a flash, then a soft glow while the toast is up — WeChat green, QQ blue, mail amber
 - **Store**: when a file or screenshot goes onto the shelf, two streams run down both sides and collide at the bottom
 - **Release**: dragging a file out sends the light back up

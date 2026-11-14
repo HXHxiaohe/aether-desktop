@@ -48,10 +48,20 @@ public sealed class IslandGlow : FrameworkElement
     /// <summary>Spectrum bands (0..1, low → high) for the 频谱环 style; the island's own array.</summary>
     public float[]? Bands { get; set; }
 
+    /// <summary>扫描光带: how many bands, evenly spaced (1–3).</summary>
+    public int BandCount { get; set; } = 1;
+
     /// <summary>Styles that move (reduce motion turns these into a still glow; they need smooth frames).</summary>
-    public static bool IsMoving(string style) => style is "scan" or "comet" or "dual" or "pulse" or "prism" or "aurora" or "warp" or "arc" or "bloomloop" or "embers" or "heartbeat" or "vortex" or "spectrum";
+    public static bool IsMoving(string style) => style is "scan" or "comet" or "dual" or "pulse" or "prism" or "aurora" or "warp" or "arc" or "bloomloop" or "embers" or "heartbeat" or "vortex" or "spectrum"
+        or "particles" or "sheen" or "ripple" or "gravity";
+    /// <summary>Slow, soft styles look the same at 15 fps; saves a quarter of the repaints.</summary>
+    public static bool IsSlow(string style) => style is "aurora" or "ripple" or "particles" or "gravity" or "sheen" or "steady" or "embers";
+    /// <summary>Styles whose light leaves the outline and needs room around the island.</summary>
+    public static bool Spills(string style) => style is "particles" or "ripple" or "aurora";
+    /// <summary>Extra room (DIP) the window should leave around the island right now.</summary>
+    public double Outset => Presence > 0.003 && Spills(Style) && !Reduce ? 22 : 0;
     /// <summary>Styles drawn in rainbow colours along the outline regardless of the colour setting.</summary>
-    public static bool IsRainbowStyle(string style) => style is "prism" or "aurora";
+    public static bool IsRainbowStyle(string style) => style is "prism"; // (aurora paints its own palette)
     /// <summary>Styles that react to the music.</summary>
     public static bool WantsAudio(string style) => style is "pulse" or "spectrum";
 
@@ -61,7 +71,7 @@ public sealed class IslandGlow : FrameworkElement
     private double _time;      // seconds since start, scaled by Speed
     private double _clock;     // real seconds
 
-    public bool Busy => Presence > 0.003 || Target > 0 || _shots.Count > 0;
+    public bool Busy => Presence > 0.003 || Target > 0 || _shots.Count > 0 || _parts.Count > 0;
     public bool HasShots => _shots.Count > 0;
 
     public void Play(string kind, Color color)
@@ -87,10 +97,51 @@ public sealed class IslandGlow : FrameworkElement
         Presence += (Target - Presence) * k;
         if (Target == 0 && Presence < 0.003) Presence = 0;
         _shots.RemoveAll(s => _clock - s.Start > s.Duration);
+        StepParticles(dt);
     }
+
+    // ---------------- 粒子溢出 ----------------
+    private struct Particle { public Point P; public Vector V; public double Age, Life, Size; }
+    private readonly List<Particle> _parts = new();
+    private readonly Random _rng = new();
+    private double _spawn;
+
+    private void StepParticles(double dt)
+    {
+        bool on = Style == "particles" && Presence > 0.05 && !Reduce && _pts.Length > 8 && _nrm.Length == _pts.Length;
+        if (on)
+        {
+            _spawn += dt * 16 * Speed;
+            while (_spawn >= 1)
+            {
+                _spawn -= 1;
+                int i = _rng.Next(_pts.Length);
+                var n = _nrm[i];
+                var tangent = new Vector(-n.Y, n.X) * (_rng.NextDouble() - 0.5) * 6;
+                _parts.Add(new Particle
+                {
+                    P = _pts[i], V = n * (9 + _rng.NextDouble() * 14) + tangent,
+                    Life = 0.9 + _rng.NextDouble() * 0.8, Size = 0.9 + _rng.NextDouble() * 1.3,
+                });
+            }
+        }
+        for (int k = _parts.Count - 1; k >= 0; k--)
+        {
+            var p = _parts[k];
+            p.Age += dt;
+            if (p.Age >= p.Life) { _parts.RemoveAt(k); continue; }
+            p.P += p.V * dt;
+            p.V *= Math.Pow(0.35, dt); // drift slows down
+            _parts[k] = p;
+        }
+        if (_parts.Count > 120) _parts.RemoveRange(0, _parts.Count - 120);
+    }
+
+    public bool HasParticles => _parts.Count > 0;
 
     // ---------------- outline sampling ----------------
     private Point[] _pts = Array.Empty<Point>();
+    private Vector[] _nrm = Array.Empty<Vector>();
     private bool _closed;
     private (double W, double H, double R, bool N) _key;
     private const double Step = 2.5;
@@ -158,6 +209,17 @@ public sealed class IslandGlow : FrameworkElement
             _closed = true;
         }
         _pts = Resample(path, Step);
+        // outward unit normals (pointing away from the island's middle)
+        _nrm = new Vector[_pts.Length];
+        var mid = new Point(w / 2, _surface.Notch ? h * 0.35 : h / 2);
+        for (int i = 0; i < _pts.Length; i++)
+        {
+            var a = _pts[Math.Max(0, i - 1)]; var b = _pts[Math.Min(_pts.Length - 1, i + 1)];
+            var t = b - a;
+            var n = t.Length > 0 ? new Vector(t.Y, -t.X) / t.Length : new Vector(0, 1);
+            if (Vector.Multiply(n, _pts[i] - mid) < 0) n = -n;
+            _nrm[i] = n;
+        }
     }
 
     private static Point[] Resample(List<Point> p, double step)
@@ -210,10 +272,10 @@ public sealed class IslandGlow : FrameworkElement
                     Base(0.16 * P);
                     for (int k = 0; k < 3; k++) Band(Frac(_time / 5.0 + k / 3.0), 0.06, 0.09, 0.95 * P);
                     break;
-                case "aurora": // 极光: two broad soft veils drifting opposite ways
-                    Base(0.14 * P);
-                    Band(Frac(_time / 9.0), 0.22, 0.22, 0.75 * P);
-                    Band(Frac(0.4 - _time / 13.0), 0.18, 0.18, 0.6 * P);
+                case "aurora": // 极光: a faint rim; the wavy curtain itself is drawn in DrawSpill
+                    Base(0.1 * P);
+                    break;
+                case "gravity": // 流淌: drawn entirely in DrawSpill (width varies along the outline)
                     break;
                 // ---- 醒目
                 case "warp": // 曲率加速: speeds up, the tail stretches, flash at the finish
@@ -285,9 +347,23 @@ public sealed class IslandGlow : FrameworkElement
                     else Base(0.25 * (0.5 + 0.5 * Math.Sin(_time * 2.1)) * P);
                     break;
                 }
-                case "scan":
-                    Base(0.32 * P);
-                    Band(Frac(_time / 3.6), 0.13, 0.13, 1.0 * P);
+                case "scan": // 1–3 evenly spaced bands (2 = the old 双子流光, 3 = 涡流-like)
+                {
+                    int nb = Math.Clamp(BandCount, 1, 3);
+                    double len = nb == 1 ? 0.13 : nb == 2 ? 0.10 : 0.075;
+                    Base((0.32 - 0.05 * (nb - 1)) * P);
+                    for (int k = 0; k < nb; k++) Band(Frac(_time / (3.6 - 0.5 * (nb - 1)) + k / (double)nb), len, len * (nb == 3 ? 1.6 : 1), (1.0 - 0.08 * (nb - 1)) * P);
+                    break;
+                }
+                // ---- new: the light leaves the outline
+                case "particles": // 粒子溢出: a soft rim; sparks drift off it (drawn after the passes)
+                    Base(0.2 * P);
+                    break;
+                case "sheen": // 玻璃反光: a slanted shine sweeps across the island (drawn after the passes)
+                    Base(0.26 * P);
+                    break;
+                case "ripple": // 水波扩散: rings leave the island and fade (drawn after the passes)
+                    Base(0.22 * P);
                     break;
                 case "comet":
                     Base(0.16 * P);
@@ -310,8 +386,8 @@ public sealed class IslandGlow : FrameworkElement
                 case "breathe":
                     Base((0.22 + 0.45 * (0.5 + 0.5 * Math.Sin(_time * 2 * Math.PI / 3.4))) * P);
                     break;
-                default: // steady
-                    Base(0.55 * P);
+                default: // steady (now with the old 呼吸's slow swell built in)
+                    Base((0.48 + 0.1 * Math.Sin(_time * 2 * Math.PI / 4.2)) * P);
                     break;
             }
         }
@@ -364,7 +440,7 @@ public sealed class IslandGlow : FrameworkElement
                 }
             }
         }
-        if (!any) return;
+        if (!any && _parts.Count == 0) return;
 
         // ---- paint: three passes, alpha per segment quantised so pens can be reused
         var origin = _surface.TranslatePoint(new Point(0, 0), this);
@@ -396,8 +472,143 @@ public sealed class IslandGlow : FrameworkElement
                 dc.DrawLine(pen, _pts[i], _pts[i + 1]);
             }
         }
+        DrawSpill(dc, color, strength, rainbow);
         if (stretched) dc.Pop();
         dc.Pop();
+    }
+
+    /// <summary>The effects that leave the outline: sparks, a shine across the body, rings.</summary>
+    private void DrawSpill(DrawingContext dc, Color color, double strength, bool rainbow)
+    {
+        double P = Presence;
+        // 粒子溢出 — drawn even after the style ends, so the last sparks fade out naturally
+        foreach (var p in _parts)
+        {
+            double t = p.Age / p.Life;
+            double a = (t < 0.15 ? t / 0.15 : 1 - (t - 0.15) / 0.85) * strength;
+            var c = rainbow ? Hsv(Frac(p.P.X / 300 + _time * 0.08) * 360, 0.7, 1) : color;
+            double r = p.Size * (1 - 0.45 * t);
+            dc.DrawEllipse(new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(a * 0.22, 0, 1)), c.R, c.G, c.B)), null, p.P, r * 3.4, r * 3.4);
+            dc.DrawEllipse(new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(a * 0.95, 0, 1)), c.R, c.G, c.B)), null, p.P, r, r);
+        }
+        if (P <= 0.003 || Reduce) return;
+
+        if (Style == "aurora" && _nrm.Length == _pts.Length)
+        {
+            // 极光: a wavy curtain floating just outside the outline. Two veils drift round in
+            // opposite directions; where they are, the ribbon lifts off, widens and brightens, and
+            // ripples along its length; colours run green → teal → violet.
+            int n = _pts.Length;
+            var q = new Point[n];
+            var env = new double[n];
+            double c1 = Frac(_time / 11.0), c2 = Frac(0.45 - _time / 15.0);
+            for (int i = 0; i < n; i++)
+            {
+                double u = i / (double)(n - 1);
+                double e = Veil(u, c1, 0.3) + 0.85 * Veil(u, c2, 0.24);
+                env[i] = Math.Min(1, e);
+                double wave = Math.Sin(2 * Math.PI * (u * 3.2 - _time / 3.2)) * 3.2 + Math.Sin(2 * Math.PI * (u * 7.0 + _time / 5.0)) * 1.2;
+                double lift = 2 + 9 * env[i] + wave * env[i];
+                q[i] = _pts[i] + _nrm[i] * lift;
+            }
+            double[] widths = { 15, 7, 2 }, alphas = { 0.13, 0.3, 0.8 };
+            Color Hue(int i)
+            {
+                double u = i / (double)(n - 1);
+                return Hsv(135 + 140 * (0.5 + 0.5 * Math.Sin(2 * Math.PI * (u * 1.3 + _time * 0.04))), 0.65, 1);
+            }
+            for (int pass = 0; pass < 3; pass++)
+            {
+                int ps = pass;
+                DrawRibbon(dc, q, _nrm, 0, n - 1, 6,
+                    i => widths[ps] * (0.55 + 0.45 * env[i]),
+                    i => env[i] * alphas[ps] * strength * P,
+                    Hue);
+            }
+        }
+
+        if (Style == "gravity")
+        {
+            // 流淌: light hugging the outline, thin at the top and heavier towards the bottom, with
+            // drops that leave the top centre, run down both sides speeding up (gravity) and pool
+            // at the bottom, which brightens as they arrive.
+            int n = _pts.Length;
+            double h = Math.Max(1, _surface.ActualHeight);
+            var amp = new double[n];
+            double pool = 0;
+            for (int k = 0; k < 3; k++)
+            {
+                double s = Frac(_time / 2.4 + k / 3.0);
+                double d = 0.5 * s * s;                         // distance from the top: accelerates
+                double stretch = 0.02 + 0.07 * s;               // faster → longer streak behind it
+                for (int i = 0; i < n; i++)
+                {
+                    double u = i / (double)(n - 1);
+                    // right side runs 0 → 0.5, left side 1 → 0.5; the tail trails back up
+                    double dr = u - d, dl = (1 - u) - d;
+                    double vr = dr <= 0 ? Math.Exp(-Math.Pow(dr / stretch, 2)) : Math.Exp(-Math.Pow(dr / 0.015, 2));
+                    double vl = dl <= 0 ? Math.Exp(-Math.Pow(dl / stretch, 2)) : Math.Exp(-Math.Pow(dl / 0.015, 2));
+                    amp[i] += 0.8 * (vr + vl);
+                }
+                if (s > 0.85) pool += (s - 0.85) / 0.15;          // a drop is arriving
+            }
+            double[] baseW = { 4, 2.2, 0.8 }, addW = { 14, 6, 1.6 }, alphas = { 0.12, 0.3, 0.85 };
+            if (_nrm.Length == n)
+            {
+                double Weight(int i) { double v = Math.Clamp(_pts[i].Y / h, 0, 1); return v * v; } // 0 top … 1 bottom
+                double Bottom(int i) => Math.Exp(-Math.Pow((i / (double)(n - 1) - 0.5) / 0.12, 2));
+                for (int pass = 0; pass < 3; pass++)
+                {
+                    int ps = pass;
+                    DrawRibbon(dc, _pts, _nrm, 0, n - 1, 4,
+                        i => baseW[ps] + addW[ps] * Weight(i) + (ps < 2 ? 3 * pool * Bottom(i) : 0),
+                        i => (0.18 + 0.5 * Weight(i) + amp[i] + 0.6 * pool * Bottom(i)) * alphas[ps] * strength * P,
+                        _ => color);
+                }
+            }
+        }
+
+        if (Style == "sheen" && !Follow)
+        {
+            // 玻璃反光: a slanted band sweeps across, then a pause
+            double w = _surface.ActualWidth, h = _surface.ActualHeight;
+            double c = Frac(_time / 4.6);
+            if (c < 0.55)
+            {
+                double x = -0.35 * w + (c / 0.55) * 1.7 * w;
+                double band = Math.Max(26, w * 0.16);
+                var g = new LinearGradientBrush { StartPoint = new Point(0, 0.5), EndPoint = new Point(1, 0.5) };
+                byte peak = (byte)(255 * Math.Clamp(0.5 * strength * P, 0, 1)); // 0.30 was hard to see
+                g.GradientStops.Add(new GradientStop(Color.FromArgb(0, 255, 255, 255), 0));
+                g.GradientStops.Add(new GradientStop(Color.FromArgb(peak, 255, 255, 255), 0.45));
+                g.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(peak / 2), color.R, color.G, color.B), 0.6));
+                g.GradientStops.Add(new GradientStop(Color.FromArgb(0, 255, 255, 255), 1));
+                dc.PushClip(_surface.Outline(w, h));
+                dc.PushTransform(new RotateTransform(22, x + band / 2, h / 2));
+                dc.DrawRectangle(g, null, new Rect(x, -h, band, h * 3));
+                dc.Pop();
+                dc.Pop();
+            }
+        }
+        else if (Style == "ripple")
+        {
+            // 水波扩散: two rings at a time grow outward from the outline and fade
+            double w = Math.Max(1, _surface.ActualWidth), h = Math.Max(1, _surface.ActualHeight);
+            var mid = new Point(w / 2, _surface.Notch ? 0 : h / 2);
+            var ring = Ring();
+            for (int k = 0; k < 2; k++)
+            {
+                double a = Frac(_time / 1.8 + k * 0.5);
+                double grow = a * 20;
+                var tf = new ScaleTransform(1 + 2 * grow / w, 1 + (_surface.Notch ? grow / h : 2 * grow / h), mid.X, mid.Y);
+                double alpha = Math.Pow(1 - a, 1.6) * strength * P;
+                var c = rainbow ? Hsv(Frac(_time * 0.1 + k * 0.5) * 360, 0.7, 1) : color;
+                dc.PushTransform(tf);
+                dc.DrawGeometry(null, new Pen(new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(alpha * 0.22, 0, 1)), c.R, c.G, c.B)), 6 * (1 - a * 0.4)), ring);
+                dc.DrawGeometry(null, new Pen(new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(alpha * 0.85, 0, 1)), c.R, c.G, c.B)), 1.6 * (1 - a * 0.5)), ring);
+                dc.Pop();
+            }
+        }
     }
 
     private static double Frac(double x) => x - Math.Floor(x);
@@ -473,6 +684,75 @@ public sealed class IslandGlow : FrameworkElement
         var c = Hsv(hue, 0.75, 1);
         var b = new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Min(1, alpha)), c.R, c.G, c.B));
         return new Pen(b, width) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+    }
+
+    /// <summary>
+    /// A variable-width stroke drawn as filled ribbon pieces (no overlapping round caps — those
+    /// repainted the same pixels 5–7 times and cost ~3× the CPU). Each chunk of a few samples is
+    /// one quad strip with the chunk's average alpha/colour.
+    /// </summary>
+    private static void DrawRibbon(DrawingContext dc, Point[] pts, Vector[] nrm, int from, int to, int chunk,
+                                   Func<int, double> width, Func<int, double> alpha, Func<int, Color> color)
+    {
+        for (int s = from; s < to; s += chunk)
+        {
+            int e = Math.Min(to, s + chunk);
+            double a = 0; for (int i = s; i <= e; i++) a += alpha(i); a /= e - s + 1;
+            if (a < 0.015) continue;
+            var c = color((s + e) / 2);
+            var g = new StreamGeometry();
+            using (var ctx = g.Open())
+            {
+                ctx.BeginFigure(pts[s] + nrm[s] * (width(s) / 2), true, true);
+                for (int i = s + 1; i <= e; i++) ctx.LineTo(pts[i] + nrm[i] * (width(i) / 2), false, false);
+                for (int i = e; i >= s; i--) ctx.LineTo(pts[i] - nrm[i] * (width(i) / 2), false, false);
+            }
+            g.Freeze();
+            dc.DrawGeometry(new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Min(1, a)), c.R, c.G, c.B)), null, g);
+        }
+    }
+
+    /// <summary>Soft bump around c (circular for closed outlines), width w.</summary>
+    private double Veil(double u, double c, double w)
+    {
+        double d = u - c;
+        if (_closed) { if (d > 0.5) d -= 1; else if (d < -0.5) d += 1; }
+        double x = d / w;
+        return Math.Exp(-x * x * 2.2);
+    }
+
+    // aurora pens, cached by (pass, hue bucket, alpha level, width bucket)
+    private readonly Dictionary<int, Pen> _auroraPens = new();
+    private Pen AuroraPen(int pass, double width, double hue, double alpha)
+    {
+        int hb = (int)(hue / 6), al = (int)(Math.Min(1, alpha) * 24), wb = (int)Math.Round(width);
+        int key = ((pass * 64 + hb) * 32 + al) * 32 + wb;
+        if (_auroraPens.TryGetValue(key, out var pen)) return pen;
+        var c = Hsv(hb * 6, 0.65, 1);
+        var b = new SolidColorBrush(Color.FromArgb((byte)(255 * al / 24.0), c.R, c.G, c.B));
+        b.Freeze();
+        pen = new Pen(b, Math.Max(1, wb)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+        pen.Freeze();
+        if (_auroraPens.Count > 4000) _auroraPens.Clear();
+        _auroraPens[key] = pen;
+        return pen;
+    }
+
+    // pens of one colour with varying width/alpha (流淌), cached by quantised width and alpha
+    private readonly Dictionary<int, Pen> _varPens = new();
+    private Color _varColor;
+    private Pen CachedPen(Color c, int pass, double width, double alpha)
+    {
+        if (c != _varColor) { _varPens.Clear(); _varColor = c; }
+        int wb = (int)Math.Round(width * 2), al = (int)(Math.Min(1, alpha) * 24);
+        int key = (pass * 64 + wb) * 32 + al;
+        if (_varPens.TryGetValue(key, out var pen)) return pen;
+        var b = new SolidColorBrush(Color.FromArgb((byte)(255 * al / 24.0), c.R, c.G, c.B));
+        b.Freeze();
+        pen = new Pen(b, Math.Max(0.5, wb / 2.0)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+        pen.Freeze();
+        _varPens[key] = pen;
+        return pen;
     }
 
     /// <summary>Rainbow ring: a gradient that slowly turns around the island.</summary>

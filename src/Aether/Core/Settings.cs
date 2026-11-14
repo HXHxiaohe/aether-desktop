@@ -144,6 +144,8 @@ public sealed class IslandSettings
     public bool GlowEnabled { get; set; } = true;
     /// <summary>scan / comet / dual / pulse / breathe / steady — the light while music plays.</summary>
     public string GlowStyle { get; set; } = "scan";
+    /// <summary>扫描光带: number of bands, 1–3.</summary>
+    public int GlowBands { get; set; } = 1;
     /// <summary>"auto" (cover / app colour), "theme", "rainbow" or "#RRGGBB".</summary>
     public string GlowColor { get; set; } = "auto";
     public int GlowStrength { get; set; } = 75;
@@ -212,7 +214,7 @@ public sealed class AppEntry
 
 public sealed class AppSettings
 {
-    public int Version { get; set; } = 3;
+    public int Version { get; set; } = 4;
     public ThemeSettings Theme { get; set; } = new();
     public bool LayoutLocked { get; set; }
     public List<WidgetConfig> Widgets { get; set; } = new();
@@ -277,6 +279,19 @@ public static class SettingsStore
                     if (Current.Version < 2) { Current.Island.NotificationContent = true; Current.Version = 2; }
                     // v3: keep the island normal over maximized windows (it's a drop target there too).
                     if (Current.Version < 3) { Current.Island.ThinLineWhenMaximized = false; Current.Version = 3; }
+                    // v4: merged glow styles map onto what replaced them
+                    if (Current.Version < 4)
+                    {
+                        var isl = Current.Island;
+                        switch (isl.GlowStyle)
+                        {
+                            case "dual": isl.GlowStyle = "scan"; isl.GlowBands = 2; break;
+                            case "vortex": isl.GlowStyle = "scan"; isl.GlowBands = 3; break;
+                            case "bloomloop": isl.GlowStyle = "ripple"; break;
+                            case "breathe": isl.GlowStyle = "steady"; break;
+                        }
+                        Current.Version = 4;
+                    }
                     return;
                 }
             }

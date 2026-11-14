@@ -11,35 +11,35 @@ public partial class SettingsWindow
 {
     private static readonly (string Group, (string Id, string Name, string Hint)[] Styles)[] GlowStyles =
     {
-        ("经典", new[]
+        ("流动", new[]
         {
-            ("scan", "扫描光带", "一段光沿着轮廓匀速巡游"),
-            ("breathe", "呼吸", "整圈光慢慢明暗起伏"),
-            ("steady", "常亮", "静止的柔光描边"),
-        }),
-        ("醒目", new[]
-        {
+            ("scan", "扫描光带", "光带沿着轮廓匀速巡游，可以选 1–3 段"),
             ("comet", "彗星掠影", "亮头长尾，掠过时拖出光痕"),
             ("warp", "曲率加速", "越跑越快、尾巴越拉越长，冲到终点闪一下"),
-            ("arc", "电弧跳跃", "几道短促的电火花在轮廓上随机闪跳"),
-            ("bloomloop", "瞬时绽放", "整圈光周期性地亮起、变宽、散开"),
+            ("gravity", "流淌", "上细下宽贴着灵动岛，光像水一样从顶部沿两边流下、在底部汇聚"),
         }),
-        ("霓虹", new[]
+        ("色彩", new[]
         {
             ("prism", "棱镜折射", "三段光带被拆成彩虹色，沿着轮廓流动"),
-            ("aurora", "极光", "两片宽而柔的彩色光，一慢一快反向漂移"),
-            ("dual", "双子流光", "两段光对向而行"),
+            ("aurora", "极光", "飘在灵动岛外的光幕，有弧度、会起伏，绿青紫三色"),
         }),
-        ("自然", new[]
+        ("火花", new[]
         {
+            ("particles", "粒子溢出", "光点从轮廓上飘出去，慢慢散开消失"),
+            ("arc", "电弧跳跃", "几道短促的电火花在轮廓上随机闪跳"),
             ("embers", "余烬升腾", "暗暗的底光上，零星火星明灭"),
-            ("heartbeat", "心跳", "「咚咚」两下的脉动"),
-            ("vortex", "涡流", "三段带尾巴的光快速同向旋转"),
         }),
-        ("频谱", new[]
+        ("节奏", new[]
         {
+            ("ripple", "水波扩散", "一圈圈光环从灵动岛往外荡开、变淡"),
+            ("heartbeat", "心跳", "「咚咚」两下的脉动"),
             ("pulse", "声波脉冲", "整圈跟着音乐的节奏明暗涨落"),
             ("spectrum", "频谱环", "低音到高音的强弱从顶部向两侧铺开在轮廓上"),
+        }),
+        ("质感", new[]
+        {
+            ("sheen", "玻璃反光", "一道斜光从灵动岛表面扫过，像屏幕上的反光"),
+            ("steady", "常亮", "柔光描边，带一点缓慢的明暗"),
         }),
     };
 
@@ -111,6 +111,17 @@ public partial class SettingsWindow
         }
         if (chosenHint is not null)
             box.Children.Add(new TextBlock { Text = chosenHint, FontSize = 12, Foreground = sub, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(48, 0, 0, 8) });
+        if (G.GlowStyle == "scan")
+        {
+            var counts = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(48, 0, 0, 10) };
+            counts.Children.Add(new TextBlock { Text = "光带数量", FontSize = 12, Foreground = faint, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) });
+            foreach (var nb in new[] { 1, 2, 3 })
+            {
+                int v = nb;
+                counts.Children.Add(Chip($"{nb} 段", G.GlowBands == nb, () => { G.GlowBands = v; GlowChanged(); BuildGlow(); App.PreviewGlow(); }));
+            }
+            box.Children.Add(counts);
+        }
 
         // ---- colour
         Label("颜色（自动 = 跟专辑封面 / 微信绿 / QQ 蓝 / 邮件琥珀）");
