@@ -625,7 +625,28 @@ public sealed class IslandGlow : FrameworkElement
                 ctx.PolyLineTo(back, true, false);
             }
             skirt.Freeze();
-            // a gradient fill would restart over the skirt's own bounds; use its bottom colour instead`r`n            Brush skirtFill = _surface.Fill is GradientBrush gb && gb.GradientStops.Count > 0 ? new SolidColorBrush(gb.GradientStops[gb.GradientStops.Count - 1].Color) : _surface.Fill;`r`n            dc.DrawGeometry(skirtFill, null, skirt);
+            // a gradient fill would restart over the skirt's own bounds; use its bottom colour instead
+            Brush skirtFill = _surface.Fill is GradientBrush gb && gb.GradientStops.Count > 0
+                ? new SolidColorBrush(gb.GradientStops[gb.GradientStops.Count - 1].Color) : _surface.Fill;
+            dc.DrawGeometry(skirtFill, null, skirt);
+            // light inside the drop: a soft glow-coloured wash, brightest where it hangs lowest,
+            // breathing with the waves (clipped to the sagging part by drawing on the same geometry)
+            double sagMid = 0;
+            for (int i = 0; i < n; i++) sagMid = Math.Max(sagMid, q[i].Y - _pts[i].Y);
+            if (sagMid > 1)
+            {
+                var light = new RadialGradientBrush
+                {
+                    MappingMode = BrushMappingMode.Absolute,
+                    Center = new Point(w / 2, h + sagMid * 0.35), GradientOrigin = new Point(w / 2, h + sagMid * 0.55),
+                    RadiusX = w * 0.42, RadiusY = Math.Max(8, sagMid * 1.4),
+                };
+                double glowA = Math.Clamp((0.42 + 0.1 * Math.Sin(_time * 1.1)) * strength * P, 0, 1);
+                light.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(255 * glowA), color.R, color.G, color.B), 0));
+                light.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(255 * glowA * 0.45), color.R, color.G, color.B), 0.55));
+                light.GradientStops.Add(new GradientStop(Color.FromArgb(0, color.R, color.G, color.B), 1));
+                dc.DrawGeometry(light, null, skirt);
+            }
             // the glow along the new outline
             var line = new StreamGeometry();
             using (var ctx = line.Open()) { ctx.BeginFigure(q[0], false, _closed); ctx.PolyLineTo(q, true, true); }

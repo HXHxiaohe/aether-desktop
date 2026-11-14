@@ -214,7 +214,7 @@ public sealed class AppEntry
 
 public sealed class AppSettings
 {
-    public int Version { get; set; } = 4;
+    public int Version { get; set; } = 5;
     public ThemeSettings Theme { get; set; } = new();
     public bool LayoutLocked { get; set; }
     public List<WidgetConfig> Widgets { get; set; } = new();
@@ -291,6 +291,12 @@ public static class SettingsStore
                             case "breathe": isl.GlowStyle = "steady"; break;
                         }
                         Current.Version = 4;
+                    }
+                    // v5: 流淌 removed → 垂坠
+                    if (Current.Version < 5)
+                    {
+                        if (Current.Island.GlowStyle == "gravity") Current.Island.GlowStyle = "liquid";
+                        Current.Version = 5;
                     }
                     return;
                 }
