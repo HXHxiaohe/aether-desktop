@@ -58,6 +58,8 @@ A small island at the top centre. **Hover to expand**; drag sideways to move it.
 
 **Shelf** — **drag files onto the island** and they get "swallowed"; drag them back out into a chat, an email or a folder whenever you need them. Screenshots taken with `Win+Shift+S` / `PrtSc` land on the shelf automatically. The clipboard tab keeps your last 30 copied texts and images (password-manager content is skipped).
 
+**Window stash** — drag any window by its title bar onto the island and let go: it's sucked in like through a straw (a genie effect). Click it under shelf › 窗口 to pour it back where it was. Everything stashed is given back when Aether quits.
+
 **Mail codes** — QQ, 163, 126, Tencent Exmail, Gmail, Outlook / Hotmail, iCloud or any IMAP server. Use an **app password / authorization code**, not your login password (Gmail: enable 2-Step Verification, then create one at <https://myaccount.google.com/apppasswords>). Read-only; codes hide themselves after 60 s (30 s / 5 min configurable).
 
 **AI quota** — reads the Codex (`~/.codex`) and Claude Code (`~/.claude`) sign-ins already on your PC.

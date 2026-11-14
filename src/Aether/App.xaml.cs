@@ -117,6 +117,7 @@ public partial class App : Application
         NotificationService.Start();
         ShelfService.Start();
         try { ClipboardService.Start(); } catch (Exception ex) { Log.Error("clipboard-start", ex); }
+        try { WindowCollector.Start(); } catch (Exception ex) { Log.Error("collect-start", ex); }
         QuotaService.Start();
         MailService.Start();
         TimerService.Start();
@@ -126,7 +127,7 @@ public partial class App : Application
         _ = MediaService.StartAsync();
         if (!disabled.Contains("island")) ApplyIsland();
         _tray = new TrayIcon();
-        SessionEnding += (_, _) => { if (Taskbar.IsHiddenByUs) Taskbar.Restore(); };
+        SessionEnding += (_, _) => { try { WindowCollector.Stop(); } catch { } if (Taskbar.IsHiddenByUs) Taskbar.Restore(); };
 
         _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
         var listener = new Thread(() =>
@@ -235,6 +236,7 @@ public partial class App : Application
 
     public static void Quit()
     {
+        try { WindowCollector.Stop(); } catch (Exception ex) { Log.Error("collect-stop", ex); } // give hidden windows back first
         SettingsStore.Flush();
         ThemeService.Shutdown();
         TaskWindows.Stop();

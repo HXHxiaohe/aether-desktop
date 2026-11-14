@@ -205,6 +205,7 @@ public sealed partial class IslandWindow : Window
         _cNotify.VerticalAlignment = VerticalAlignment.Center;
         _cNotify.Visibility = Visibility.Collapsed;
         cRight.Children.Add(_cNotify);
+        BuildCollectBadge(cRight);
         Grid.SetColumn(cRight, 2);
         _compact.Children.Add(cRight);
         _layers.Children.Add(_compact);
@@ -1417,7 +1418,7 @@ public sealed partial class IslandWindow : Window
         if (now < _osdUntil) return Mode.Osd;
         if (now < _toastUntil) return Mode.Toast;
         if (_maximized && S.ThinLineWhenMaximized) return Mode.Line;
-        bool richer = Playing || TimerService.Active || (S.ShowUnread && AttentionService.Current.Count > 0) || S.ShowStats || S.ShowTime || NotificationService.Unseen > 0
+        bool richer = Playing || TimerService.Active || WindowCollector.Items.Count > 0 || (S.ShowUnread && AttentionService.Current.Count > 0) || S.ShowStats || S.ShowTime || NotificationService.Unseen > 0
             || (S.Quota && S.QuotaInCompact && QuotaCompactText() is not null);
         return richer ? Mode.Compact : Mode.Idle;
     }

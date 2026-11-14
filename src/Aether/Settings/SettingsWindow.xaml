@@ -419,6 +419,13 @@
                                 </StackPanel>
                                 <CheckBox x:Name="IslandScreenshotShelf" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnIslandOption" />
                             </Grid>
+                            <Grid Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource RowLabel}" Text="拖动窗口到灵动岛收纳" />
+                                    <TextBlock Style="{StaticResource RowHint}" Text="按住窗口标题栏拖到灵动岛上松手，窗口会被吸进去；在 置物架 › 窗口 里点一下放回原处。退出 Aether 时会全部放回" TextWrapping="Wrap" Margin="0,2,60,0" />
+                                </StackPanel>
+                                <CheckBox x:Name="IslandWindowCollect" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnIslandOption" />
+                            </Grid>
                         </StackPanel>
                     </Border>
 

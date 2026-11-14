@@ -448,6 +448,7 @@ public partial class SettingsWindow : Window
         IslandClipboard.IsChecked = s.ClipboardHistory;
         IslandClipboardImages.IsChecked = s.ClipboardImages;
         IslandScreenshotShelf.IsChecked = s.ScreenshotShelf;
+        IslandWindowCollect.IsChecked = s.WindowCollect;
         IslandQuota.IsChecked = s.Quota;
         IslandQuotaCompact.IsChecked = s.QuotaInCompact;
         IslandMail.IsChecked = s.Mail;
@@ -483,6 +484,7 @@ public partial class SettingsWindow : Window
         s.ClipboardHistory = IslandClipboard.IsChecked == true;
         s.ClipboardImages = IslandClipboardImages.IsChecked == true;
         s.ScreenshotShelf = IslandScreenshotShelf.IsChecked == true;
+        s.WindowCollect = IslandWindowCollect.IsChecked == true;
         bool quotaCompactWasOff = !s.QuotaInCompact;
         s.Quota = IslandQuota.IsChecked == true;
         s.QuotaInCompact = IslandQuotaCompact.IsChecked == true;

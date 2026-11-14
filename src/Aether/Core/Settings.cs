@@ -153,6 +153,8 @@ public sealed class IslandSettings
     public bool GlowNotify { get; set; } = true;
     public bool GlowShelf { get; set; } = true;
     public bool ReduceMotion { get; set; }
+    /// <summary>Drag a window by its title bar onto the island to put it away (窗口收纳).</summary>
+    public bool WindowCollect { get; set; } = true;
     /// <summary>Win+Shift+S / PrtSc screenshots are saved and put on the shelf (置物架).</summary>
     public bool ScreenshotShelf { get; set; } = true;
     public int LastTimerMinutes { get; set; } = 25;

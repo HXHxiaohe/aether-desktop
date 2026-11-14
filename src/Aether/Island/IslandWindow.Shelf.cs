@@ -44,7 +44,9 @@ public sealed partial class IslandWindow
         head.Children.Add(seg);
         var clear = Pill("清空", false, () =>
         {
-            if (S.ShelfTab == 0) ShelfService.Clear(); else ClipboardService.ClearRecent();
+            if (S.ShelfTab == 0) ShelfService.Clear();
+            else if (S.ShelfTab == 1) ClipboardService.ClearRecent();
+            else foreach (var w in WindowCollector.Items.ToList()) WindowCollector.Release(w); // 全部放回
         });
         clear.HorizontalAlignment = HorizontalAlignment.Right;
         head.Children.Add(clear);
@@ -89,6 +91,8 @@ public sealed partial class IslandWindow
         _clipList = new StackPanel();
         _clipView = new ScrollViewer { Content = _clipList, MaxHeight = 236, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         body.Children.Add(_clipView);
+        // collected windows
+        BuildCollect(seg, body);
         page.Children.Add(body);
 
         // effects layer for the swallow animation (above everything, never hit-tested)
@@ -149,8 +153,10 @@ public sealed partial class IslandWindow
         S.ShelfTab = tab;
         SetPillOn(_shelfTabFiles, tab == 0);
         SetPillOn(_shelfTabClip, tab == 1);
+        SetPillOn(_shelfTabWin, tab == 2);
         _shelfFilesView.Visibility = tab == 0 ? Visibility.Visible : Visibility.Collapsed;
         _clipView.Visibility = tab == 1 ? Visibility.Visible : Visibility.Collapsed;
+        _winView.Visibility = tab == 2 ? Visibility.Visible : Visibility.Collapsed;
         if (rebuild) { RebuildShelf(); Core.SettingsStore.Touch(); }
     }
 
@@ -169,7 +175,9 @@ public sealed partial class IslandWindow
         ((TextBlock)((Border)_shelfTabFiles.Content).Child).Text = ShelfService.Items.Count > 0 ? $"文件 {ShelfService.Items.Count}" : "文件";
         int clips = ClipboardService.Items.Count;
         ((TextBlock)((Border)_shelfTabClip.Content).Child).Text = clips > 0 ? $"剪贴板 {clips}" : "剪贴板";
-        if (S.ShelfTab == 0) RebuildFiles(); else RebuildClips();
+        int wins = WindowCollector.Items.Count;
+        ((TextBlock)((Border)_shelfTabWin.Content).Child).Text = wins > 0 ? $"窗口 {wins}" : "窗口";
+        if (S.ShelfTab == 0) RebuildFiles(); else if (S.ShelfTab == 1) RebuildClips(); else RebuildWindows();
         _layoutDirty = true;
     }
 
