@@ -9,14 +9,38 @@ namespace Aether.Settings;
 /// <summary>流光与动效 section (built in code): style, colour, strength, speed, scenes, preview.</summary>
 public partial class SettingsWindow
 {
-    private static readonly (string Id, string Name, string Hint)[] GlowStyles =
+    private static readonly (string Group, (string Id, string Name, string Hint)[] Styles)[] GlowStyles =
     {
-        ("scan", "扫描光带", "一段光沿着轮廓匀速巡游"),
-        ("comet", "彗星掠影", "亮头长尾，掠过时拖出光痕"),
-        ("dual", "双子流光", "两段光对向而行"),
-        ("pulse", "声波脉冲", "跟着音乐的节奏明暗涨落"),
-        ("breathe", "呼吸", "整圈光慢慢明暗起伏"),
-        ("steady", "常亮", "静止的柔光描边"),
+        ("经典", new[]
+        {
+            ("scan", "扫描光带", "一段光沿着轮廓匀速巡游"),
+            ("breathe", "呼吸", "整圈光慢慢明暗起伏"),
+            ("steady", "常亮", "静止的柔光描边"),
+        }),
+        ("醒目", new[]
+        {
+            ("comet", "彗星掠影", "亮头长尾，掠过时拖出光痕"),
+            ("warp", "曲率加速", "越跑越快、尾巴越拉越长，冲到终点闪一下"),
+            ("arc", "电弧跳跃", "几道短促的电火花在轮廓上随机闪跳"),
+            ("bloomloop", "瞬时绽放", "整圈光周期性地亮起、变宽、散开"),
+        }),
+        ("霓虹", new[]
+        {
+            ("prism", "棱镜折射", "三段光带被拆成彩虹色，沿着轮廓流动"),
+            ("aurora", "极光", "两片宽而柔的彩色光，一慢一快反向漂移"),
+            ("dual", "双子流光", "两段光对向而行"),
+        }),
+        ("自然", new[]
+        {
+            ("embers", "余烬升腾", "暗暗的底光上，零星火星明灭"),
+            ("heartbeat", "心跳", "「咚咚」两下的脉动"),
+            ("vortex", "涡流", "三段带尾巴的光快速同向旋转"),
+        }),
+        ("频谱", new[]
+        {
+            ("pulse", "声波脉冲", "整圈跟着音乐的节奏明暗涨落"),
+            ("spectrum", "频谱环", "低音到高音的强弱从顶部向两侧铺开在轮廓上"),
+        }),
     };
 
     private static readonly (string Id, string Name)[] GlowColors =
@@ -63,17 +87,30 @@ public partial class SettingsWindow
         if (!G.GlowEnabled) return;
 
         // ---- style
-        Label("放歌时的光效");
-        var styles = new WrapPanel();
-        foreach (var (id, name, hint) in GlowStyles)
+        Label("放歌时的光效（点一下会在灵动岛上预览）");
+        string? chosenHint = null;
+        foreach (var (group, list) in GlowStyles)
         {
-            var sid = id;
-            var b = Chip(name, G.GlowStyle == id, () => { G.GlowStyle = sid; GlowChanged(); BuildGlow(); App.PreviewGlow(); });
-            b.ToolTip = hint;
-            b.Margin = new Thickness(0, 0, 6, 6);
-            styles.Children.Add(b);
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 2) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(48) });
+            row.ColumnDefinitions.Add(new ColumnDefinition());
+            row.Children.Add(new TextBlock { Text = group, FontSize = 12, Foreground = faint, Margin = new Thickness(0, 6, 0, 0) });
+            var styles = new WrapPanel();
+            foreach (var (id, name, hint) in list)
+            {
+                var sid = id;
+                var b = Chip(name, G.GlowStyle == id, () => { G.GlowStyle = sid; GlowChanged(); BuildGlow(); App.PreviewGlow(); });
+                b.ToolTip = hint;
+                b.Margin = new Thickness(0, 0, 6, 6);
+                styles.Children.Add(b);
+                if (G.GlowStyle == id) chosenHint = $"{name}：{hint}";
+            }
+            Grid.SetColumn(styles, 1);
+            row.Children.Add(styles);
+            box.Children.Add(row);
         }
-        box.Children.Add(styles);
+        if (chosenHint is not null)
+            box.Children.Add(new TextBlock { Text = chosenHint, FontSize = 12, Foreground = sub, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(48, 0, 0, 8) });
 
         // ---- colour
         Label("颜色（自动 = 跟专辑封面 / 微信绿 / QQ 蓝 / 邮件琥珀）");

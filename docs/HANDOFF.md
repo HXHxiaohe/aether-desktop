@@ -22,7 +22,7 @@ Aether Desktop：WPF + .NET 10，框架依赖，**默认软件渲染**（不唤�
 - 调试：`AETHER_GLOW_DEMO=scan|comet|…|converge` 启动后一直演示该效果；`AETHER_ISLAND_MODE=Compact|Expanded` 固定岛状态。
 
 ## 用户想要、还没做的（参考抖音「流光岛」视频）
-1. **更多光效预设**，按类别分组（醒目 / 霓虹 / 自然 / 材质 / 频谱 / 经典），如棱镜折射、电弧跳跃、涡流、曲率加速、余烬升腾；带实时预览。在 `IslandGlow.OnRender` 的 `switch` 里加分支即可，参数化为主。
+1. ~~更多光效预设~~ **已做（1.0.13）**：共 15 种，分经典 / 醒目 / 霓虹 / 自然 / 频谱（设置里分组，点选即预览）。新增在 `IslandGlow.OnRender` 的 `switch` 加分支，再在 `IsMoving` / `IsRainbowStyle` / `WantsAudio` 登记，`SettingsWindow.Glow.cs` 的 `GlowStyles` 加名字。调试：`AETHER_GLOW_DEMO=a,b,c` 每 3 秒轮换（不写入设置）。还可加「材质」类（如金属拉丝、玻璃反光）。
 2. ~~窗口收纳~~ **已做（1.0.11）**：`Island/WindowCollector.cs`（MOVESIZESTART/END 钩子、PrintWindow 截图、ShowWindowAsync 隐藏/恢复、collected.json 崩溃恢复）、`Island/GenieOverlay.cs`（128 条带神灯动画）、`Island/IslandWindow.Collect.cs`（拖到岛上提示、置物架「窗口」标签、收起状态 ▣N 角标）。**对别的程序窗口只用 Async API**（同步 ShowWindow 会和目标线程互等死锁）。调试：`AETHER_COLLECT_DEMO=<窗口标题>`。还没做：「接管最小化」（最小化直接收进岛）。
 3. **设置拆页**：像参考那样分「动效」（速度三档 + 收纳/释放时长显示、减少动态效果、消息轻弹）和「光效」（边缘光效 / 收纳与释放 / 颜色与触发 三个场景各自设置）。
 4. ~~消息轻弹~~ **已做（1.0.12）**：`IslandWindow.Motion.cs` `Bounce()` / `MessageBurst()`，在 `MarkMessageToast` 里调用。

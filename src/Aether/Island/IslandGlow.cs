@@ -45,6 +45,15 @@ public sealed class IslandGlow : FrameworkElement
     public bool Reduce { get; set; }
     /// <summary>Music level 0..1 for pulse.</summary>
     public double Audio { get; set; }
+    /// <summary>Spectrum bands (0..1, low → high) for the 频谱环 style; the island's own array.</summary>
+    public float[]? Bands { get; set; }
+
+    /// <summary>Styles that move (reduce motion turns these into a still glow; they need smooth frames).</summary>
+    public static bool IsMoving(string style) => style is "scan" or "comet" or "dual" or "pulse" or "prism" or "aurora" or "warp" or "arc" or "bloomloop" or "embers" or "heartbeat" or "vortex" or "spectrum";
+    /// <summary>Styles drawn in rainbow colours along the outline regardless of the colour setting.</summary>
+    public static bool IsRainbowStyle(string style) => style is "prism" or "aurora";
+    /// <summary>Styles that react to the music.</summary>
+    public static bool WantsAudio(string style) => style is "pulse" or "spectrum";
 
     private sealed class Shot { public string Kind = ""; public double Start, Duration; public Color Color; }
     private readonly List<Shot> _shots = new();
@@ -193,9 +202,89 @@ public sealed class IslandGlow : FrameworkElement
         {
             any = true;
             double P = Presence;
-            string style = Reduce && Style is "scan" or "comet" or "dual" ? "steady" : Style;
+            string style = Reduce && IsMoving(Style) ? "steady" : Style;
             switch (style)
             {
+                // ---- 霓虹
+                case "prism": // 棱镜折射: three short bands, coloured by position (forced rainbow)
+                    Base(0.16 * P);
+                    for (int k = 0; k < 3; k++) Band(Frac(_time / 5.0 + k / 3.0), 0.06, 0.09, 0.95 * P);
+                    break;
+                case "aurora": // 极光: two broad soft veils drifting opposite ways
+                    Base(0.14 * P);
+                    Band(Frac(_time / 9.0), 0.22, 0.22, 0.75 * P);
+                    Band(Frac(0.4 - _time / 13.0), 0.18, 0.18, 0.6 * P);
+                    break;
+                // ---- 醒目
+                case "warp": // 曲率加速: speeds up, the tail stretches, flash at the finish
+                {
+                    double c = Frac(_time / 2.6);
+                    double pos = c * c * c;
+                    Band(Frac(pos + 0.05), 0.02, 0.05 + 0.35 * c * c, (0.6 + 0.6 * c) * P);
+                    Base((0.1 + (c > 0.9 ? 0.6 * (c - 0.9) / 0.1 : 0)) * P);
+                    break;
+                }
+                case "arc": // 电弧跳跃: a few short sparks jumping about, ~11 times a second
+                {
+                    long slot = (long)Math.Floor(_time * 11);
+                    var rnd = new Random(unchecked((int)(slot * 7919)));
+                    Base((0.1 + 0.08 * rnd.NextDouble()) * P);
+                    int sparks = 2 + rnd.Next(2);
+                    for (int k = 0; k < sparks; k++) Band(rnd.NextDouble(), 0.008 + 0.012 * rnd.NextDouble(), 0.008 + 0.012 * rnd.NextDouble(), (0.9 + 0.7 * rnd.NextDouble()) * P);
+                    break;
+                }
+                case "bloomloop": // 瞬时绽放: the whole ring flashes and widens every couple of seconds
+                {
+                    double c = Frac(_time / 2.4);
+                    double f = c < 0.12 ? c / 0.12 : Math.Pow(1 - (c - 0.12) / 0.88, 2);
+                    Base((0.14 + 0.75 * f) * P);
+                    widthBoost = 1 + c * 1.1;
+                    break;
+                }
+                // ---- 自然
+                case "embers": // 余烬升腾: a dim warm glow with sparks that glow up and die down
+                    Base(0.12 * P);
+                    for (int k = 0; k < 7; k++)
+                    {
+                        double phase = _time / 1.8 + k * 0.137;
+                        double life = Frac(phase);
+                        var r = new Random(unchecked((int)Math.Floor(phase) * 104729 + k * 31));
+                        Band(r.NextDouble(), 0.014, 0.02, Math.Sin(life * Math.PI) * 0.75 * P);
+                    }
+                    break;
+                case "heartbeat": // 心跳: lub-dub
+                {
+                    double c = Frac(_time / 1.15);
+                    double beat = Math.Exp(-Math.Pow(c / 0.05, 2)) + Math.Exp(-Math.Pow(1 - c, 2) / 0.0025) + 0.7 * Math.Exp(-Math.Pow((c - 0.22) / 0.05, 2));
+                    Base((0.14 + 0.75 * Math.Min(1, beat)) * P);
+                    widthBoost = 1 + 0.5 * Math.Min(1, beat);
+                    break;
+                }
+                case "vortex": // 涡流: three tailed bands spinning fast
+                    Base(0.1 * P);
+                    for (int k = 0; k < 3; k++) Band(Frac(_time / 1.6 + k / 3.0), 0.02, 0.14, 0.85 * P);
+                    break;
+                // ---- 频谱
+                case "spectrum": // 频谱环: the music's bands laid along the outline, mirrored from the top
+                {
+                    var bands = Bands;
+                    Base(0.1 * P);
+                    if (bands is { Length: > 8 })
+                    {
+                        int nb = Math.Min(bands.Length - 2, 22);
+                        for (int i = 0; i < _amp.Length; i++)
+                        {
+                            double u = i / (double)(_amp.Length - 1);
+                            double d = Math.Min(u, 1 - u) * 2;               // 0 at the top, 1 at the bottom
+                            double f = d * (nb - 1);
+                            int b0 = (int)f; double t = f - b0;
+                            double lvl = bands[2 + b0] * (1 - t) + bands[2 + Math.Min(nb - 1, b0 + 1)] * t;
+                            _amp[i] += Math.Clamp(lvl * 1.6, 0, 1.3) * P;
+                        }
+                    }
+                    else Base(0.25 * (0.5 + 0.5 * Math.Sin(_time * 2.1)) * P);
+                    break;
+                }
                 case "scan":
                     Base(0.32 * P);
                     Band(Frac(_time / 3.6), 0.13, 0.13, 1.0 * P);
@@ -283,6 +372,8 @@ public sealed class IslandGlow : FrameworkElement
         bool stretched = Follow && _key.W > 0 && _key.H > 0;
         if (stretched) dc.PushTransform(new ScaleTransform(_surface.ActualWidth / _key.W, _surface.ActualHeight / _key.H));
         var ring = Ring();
+        // one-shots keep the scene colour; neon styles paint in rainbow along the outline
+        bool rainbow = Rainbow || (_shots.Count == 0 && Presence > 0.003 && IsRainbowStyle(Style));
         for (int pass = 0; pass < 3; pass++)
         {
             double w = PassWidth[pass] * (pass < 2 ? widthBoost : 1);
@@ -292,7 +383,7 @@ public sealed class IslandGlow : FrameworkElement
             if (ba >= 0.012)
             {
                 int bl = Math.Min(Levels - 1, (int)(Math.Min(1, ba) * (Levels - 1) + 0.5));
-                if (bl > 0) dc.DrawGeometry(null, Rainbow ? RainbowRingPen(w, ba) : pens[bl], ring);
+                if (bl > 0) dc.DrawGeometry(null, rainbow ? RainbowRingPen(w, ba) : pens[bl], ring);
             }
             // moving bands: only the lit segments
             for (int i = 0; i < n - 1; i++)
@@ -301,7 +392,7 @@ public sealed class IslandGlow : FrameworkElement
                 if (a < 0.012) continue;
                 int level = Math.Min(Levels - 1, (int)(Math.Min(1, a) * (Levels - 1) + 0.5));
                 if (level <= 0) continue;
-                var pen = Rainbow ? RainbowPen(pass, w, i / (double)n, a) : pens[level];
+                var pen = rainbow ? RainbowPen(pass, w, i / (double)n, a) : pens[level];
                 dc.DrawLine(pen, _pts[i], _pts[i + 1]);
             }
         }
@@ -332,7 +423,7 @@ public sealed class IslandGlow : FrameworkElement
     }
 
     /// <summary>Animations that move need a smooth frame rate; still glows don't.</summary>
-    public bool NeedsFastFrames => _shots.Count > 0 || (Presence > 0.003 && Style is "scan" or "comet" or "dual" or "pulse" && !Reduce);
+    public bool NeedsFastFrames => _shots.Count > 0 || (Presence > 0.003 && IsMoving(Style) && !Reduce);
 
     /// <summary>A soft band centred at t. ahead/behind = reach (in t) in each direction.</summary>
     private void Band(double t, double ahead, double behind, double amp)

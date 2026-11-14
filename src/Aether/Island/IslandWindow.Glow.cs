@@ -14,6 +14,8 @@ public sealed partial class IslandWindow
     private DispatcherTimer? _glowTimer;
     private readonly Stopwatch _glowClock = new();
     private DateTime _msgToastUntil, _glowPreviewUntil;
+    /// <summary>Debug demo style: shown instead of the setting, never saved.</summary>
+    private string? _demoStyle;
     private Color _msgToastColor;
 
     private static readonly Color WeChatGreen = Color.FromRgb(0x2B, 0xE0, 0x7E);
@@ -35,7 +37,17 @@ public sealed partial class IslandWindow
                     t.Tick += (_, _) => GlowShot(demo, IslandGlow.Vivid(ThemeService.Accent));
                     t.Start();
                 }
-                else { S.GlowStyle = demo; _glowPreviewUntil = DateTime.MaxValue; UpdateGlowScene(); }
+                else if (demo.Contains(','))
+                {
+                    // a list: show each for 3 s in turn (for capturing many styles in one run)
+                    var list = demo.Split(',');
+                    int idx = 0;
+                    _demoStyle = list[0]; _glowPreviewUntil = DateTime.MaxValue; UpdateGlowScene();
+                    var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+                    t.Tick += (_, _) => { idx = (idx + 1) % list.Length; _demoStyle = list[idx]; UpdateGlowScene(); };
+                    t.Start();
+                }
+                else { _demoStyle = demo; _glowPreviewUntil = DateTime.MaxValue; UpdateGlowScene(); }
             };
         }
     }
@@ -108,7 +120,7 @@ public sealed partial class IslandWindow
         string style = "";
         Color natural = IslandGlow.Vivid(ThemeService.Accent);
         if (!S.GlowEnabled || !visible) style = "";
-        else if (now < _glowPreviewUntil) style = S.GlowStyle;
+        else if (now < _glowPreviewUntil) style = _demoStyle ?? S.GlowStyle;
         else if (_mode == Mode.Toast && _toastUntil == _msgToastUntil && S.GlowNotify)
         {
             style = "breathe";
@@ -116,7 +128,7 @@ public sealed partial class IslandWindow
         }
         else if (S.GlowMusic && Playing && _mode is Mode.Compact or Mode.Expanded or Mode.Toast)
         {
-            style = S.GlowStyle;
+            style = _demoStyle ?? S.GlowStyle;
             if (_coverColor is { } cc) natural = IslandGlow.Vivid(cc);
         }
         if (style.Length > 0)
@@ -189,8 +201,9 @@ public sealed partial class IslandWindow
     {
         double dt = Math.Clamp(_glowClock.Elapsed.TotalSeconds, 0, 0.1);
         _glowClock.Restart();
-        if (_glow.Style == "pulse" && _glow.Target > 0)
+        if (IslandGlow.WantsAudio(_glow.Style) && _glow.Target > 0)
         {
+            _glow.Bands = _levels; // 频谱环 reads the bands themselves
             // music level from the spectrum the bars already use (low/mid bands)
             double sum = 0; int k = Math.Min(14, _levels.Length);
             for (int i = 2; i < k; i++) sum += _levels[i];
