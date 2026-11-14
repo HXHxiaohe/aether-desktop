@@ -170,6 +170,20 @@ public partial class SettingsWindow
         Row("消息轻弹", "新消息时灵动岛轻轻一压再弹回；同一个软件连着来的消息合并成「N 条新消息」", Switch(G.MessageBounce, v => G.MessageBounce = v));
         Row("封面光环", "音乐页的封面周围有一圈封面颜色的光，随节奏转动、明暗", Switch(G.CoverRing, v => G.CoverRing = v));
         Row("切歌翻片", "切歌时封面像卡片一样翻到下一首", Switch(G.CoverFlip, v => G.CoverFlip = v));
+        Row("静默渐隐", "没放歌、没消息、鼠标也不在附近时，灵动岛慢慢变淡；一有动静或鼠标靠近就亮回来", Switch(G.IdleFade, v => G.IdleFade = v));
+        if (G.IdleFade)
+        {
+            var after = new StackPanel { Orientation = Orientation.Horizontal };
+            foreach (var (sec, label) in new[] { (30, "30 秒"), (60, "1 分钟"), (120, "2 分钟") })
+            {
+                int v = sec;
+                after.Children.Add(Chip(label, G.IdleFadeSeconds == sec, () => { G.IdleFadeSeconds = v; GlowChanged(); BuildGlow(); }));
+            }
+            Row("多久后变淡", null, after);
+            var dim = new Slider { Minimum = 5, Maximum = 60, Value = G.IdleFadeOpacity, Width = 200 };
+            dim.ValueChanged += (_, _) => { G.IdleFadeOpacity = (int)Math.Round(dim.Value); GlowChanged(); };
+            Row("变淡后的可见度", "越小越淡", dim);
+        }
         Row("减少动态效果", "流动的光改为静止柔光，动画更短，关掉轻弹 / 光环 / 翻片", Switch(G.ReduceMotion, v => G.ReduceMotion = v));
 
         // ---- preview

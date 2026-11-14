@@ -28,6 +28,8 @@ Lightweight: about 0.2% CPU and ~70 MB RAM at idle; everything steps aside for f
 
 **Uninstall**: Windows Settings › Apps, the Start-menu "卸载 Aether Desktop", or Aether Settings › About › 卸载. The taskbar is restored first; you choose whether to delete your data.
 
+**Backup**: Settings › About › export / import backup — settings, notes, Dock and drawer, shelf and clipboard history in one file (mail passwords need re-entering on a new PC).
+
 **Lost your taskbar?** Start menu › Aether Desktop › "Aether 恢复任务栏（应急）" (restore taskbar).
 
 ---

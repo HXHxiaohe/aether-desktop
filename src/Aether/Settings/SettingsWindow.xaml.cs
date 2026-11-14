@@ -508,6 +508,40 @@ public partial class SettingsWindow : Window
 
     private void OnTutorial(object sender, RoutedEventArgs e) => TutorialWindow.ShowTutorial();
 
+    // ---------- backup ----------
+    private void OnExportBackup(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "导出 Aether 备份", FileName = Backup.SuggestedName, Filter = "Aether 备份|*.zip",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            int n = Backup.Export(dlg.FileName);
+            MessageBox.Show(this, $"已导出到：\n{dlg.FileName}\n\n包含设置、便签、Dock 与抽屉、置物架、剪贴板记录和邮箱列表（{n} 个文件）。", "Aether");
+        }
+        catch (Exception ex) { MessageBox.Show(this, "导出失败：" + ex.Message, "Aether"); }
+    }
+
+    private void OnImportBackup(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Title = "选择 Aether 备份", Filter = "Aether 备份|*.zip" };
+        if (dlg.ShowDialog(this) != true) return;
+        if (Backup.Check(dlg.FileName) is { } problem) { MessageBox.Show(this, problem, "Aether"); return; }
+        if (Setup.Ask("导入备份",
+                "会用备份替换现在的设置、便签、Dock 与抽屉、置物架和剪贴板记录，Aether 会自动重启。\n\n" +
+                "邮箱的授权码是用这台电脑的 Windows 加密保存的：在另一台电脑上恢复后，需要到「邮件与验证码」里重新填一次。",
+                null, "导入并重启", "取消") != 1) return;
+        try
+        {
+            Backup.ImportAndRestart(dlg.FileName);
+            App.Quit();
+        }
+        catch (Exception ex) { MessageBox.Show(this, "导入失败：" + ex.Message, "Aether"); }
+    }
+
     private void OnWidgetInk(object sender, RoutedEventArgs e)
     {
         if (!_ready) return;

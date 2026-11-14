@@ -43,6 +43,24 @@ public partial class App : Application
             Shutdown(Updater.Apply(e.Args[au + 1], e.Args[au + 2], waitPid));
             return;
         }
+        // Backup from the command line: `--export-backup <zip>` / `--import-backup <zip>` (quits the
+        // running Aether, restores, starts it again). No UI.
+        int bx = Array.FindIndex(e.Args, a => a.Equals("--export-backup", StringComparison.OrdinalIgnoreCase));
+        if (bx >= 0 && bx + 1 < e.Args.Length)
+        {
+            try { SettingsStore.Load(); Backup.Export(e.Args[bx + 1]); Shutdown(0); }
+            catch (Exception ex) { Log.Error("export-backup", ex); Shutdown(1); }
+            return;
+        }
+        int bi = Array.FindIndex(e.Args, a => a.Equals("--import-backup", StringComparison.OrdinalIgnoreCase));
+        if (bi >= 0 && bi + 1 < e.Args.Length)
+        {
+            if (Backup.Check(e.Args[bi + 1]) is { } problem) { Log.Info("[backup] " + problem); Shutdown(1); return; }
+            Setup.QuitRunning();
+            Backup.ImportAndRestart(e.Args[bi + 1]);
+            Shutdown(0);
+            return;
+        }
         if (e.Args.Contains("--uninstall", StringComparer.OrdinalIgnoreCase))
         {
             Setup.RunUninstall();

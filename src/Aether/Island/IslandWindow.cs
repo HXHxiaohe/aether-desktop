@@ -1468,6 +1468,7 @@ public sealed partial class IslandWindow : Window
             return;
         }
         _mode = next;
+        if (next is Mode.Expanded or Mode.Toast or Mode.Osd or Mode.Alert) MarkActivity();
         if (next == Mode.Expanded) { SyncSliders(); UpdateProgress(); UpdateLyric(); _hClock.Text = DateTime.Now.ToString("M月d日 ddd  HH:mm", Zh); if (_page == 1) OnStats(); if (_page == 2) OnRadio(); RefreshExtraPage(); }
         _layoutDirty = false;
         Resize(next, instant);
@@ -1626,6 +1627,7 @@ public sealed partial class IslandWindow : Window
             _hClock.Text = DateTime.Now.ToString("M月d日 ddd  HH:mm", Zh);
         }
         if (Playing && (_mode == Mode.Compact || (_mode == Mode.Expanded && _page == 0))) UpdateLyric();
+        IdleFadeTick(cx, cy);
 
         if (!_hover && _mode == Mode.Expanded && !_pressed && !_lineHover && (DateTime.Now - _leftSince).TotalMilliseconds < 380) return;
         if (_mode == Mode.Expanded && _page == 0 && _tick % 4 == 0) UpdateProgress();

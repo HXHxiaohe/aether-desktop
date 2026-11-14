@@ -155,6 +155,11 @@ public sealed class IslandSettings
     public bool GlowNotify { get; set; } = true;
     public bool GlowShelf { get; set; } = true;
     public bool ReduceMotion { get; set; }
+    /// <summary>静默渐隐: fade the island when nothing has happened for a while.</summary>
+    public bool IdleFade { get; set; }
+    public int IdleFadeSeconds { get; set; } = 60;
+    /// <summary>How visible the faded island stays, 5–90 %.</summary>
+    public int IdleFadeOpacity { get; set; } = 25;
     /// <summary>消息轻弹: squash-and-spring on a new message; repeats from one app merge.</summary>
     public bool MessageBounce { get; set; } = true;
     /// <summary>封面光环: cover-coloured ring turning round the music page cover with the beat.</summary>
