@@ -153,6 +153,12 @@ public sealed class IslandSettings
     public bool GlowNotify { get; set; } = true;
     public bool GlowShelf { get; set; } = true;
     public bool ReduceMotion { get; set; }
+    /// <summary>消息轻弹: squash-and-spring on a new message; repeats from one app merge.</summary>
+    public bool MessageBounce { get; set; } = true;
+    /// <summary>封面光环: cover-coloured ring turning round the music page cover with the beat.</summary>
+    public bool CoverRing { get; set; } = true;
+    /// <summary>切歌翻片: the cover flips over on a track change.</summary>
+    public bool CoverFlip { get; set; } = true;
     /// <summary>Drag a window by its title bar onto the island to put it away (窗口收纳).</summary>
     public bool WindowCollect { get; set; } = true;
     /// <summary>Win+Shift+S / PrtSc screenshots are saved and put on the shelf (置物架).</summary>

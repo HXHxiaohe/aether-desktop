@@ -78,6 +78,9 @@ Light that flows along the island's outline. Settings › 灵动岛 › **流光
 - **New message**: a flash, then a soft glow while the toast is up — WeChat green, QQ blue, mail amber
 - **Store**: when a file or screenshot goes onto the shelf, two streams run down both sides and collide at the bottom
 - **Release**: dragging a file out sends the light back up
+- **Message bounce**: the island gives a little squash-and-spring on a new message; repeats from one app merge into "N new messages"
+- **Cover ring**: a ring of the album's colours turns round the cover on the music page, breathing with the beat
+- **Cover flip**: on a track change the cover flips over to the new one
 - Colour (auto / theme / rainbow / fixed), brightness, speed (calm / balanced / snappy), per-scene switches, reduce motion, live preview buttons
 - Runs only while lit; about 0.6% CPU when glowing
 

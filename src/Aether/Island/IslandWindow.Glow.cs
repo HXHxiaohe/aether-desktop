@@ -63,7 +63,18 @@ public sealed partial class IslandWindow
     {
         _msgToastUntil = _toastUntil;
         _msgToastColor = AppGlowColor(appName);
-        if (S.GlowEnabled && S.GlowNotify) GlowShot("bloom", _msgToastColor);
+        // 连续消息合并: the same app again within a few seconds → one toast with a count,
+        // a lighter bounce and no fresh flash.
+        int n = MessageBurst(appName);
+        if (n > 1)
+        {
+            var sub = _toastSub.Text;
+            if (sub is "有新消息" or "新消息") _toastSub.Text = $"{n} 条新消息";
+            else if (!sub.Contains("条新消息")) _toastSub.Text = $"{n} 条新消息 · {sub}";
+            else _toastSub.Text = System.Text.RegularExpressions.Regex.Replace(sub, @"^\d+ 条新消息", $"{n} 条新消息");
+        }
+        if (S.MessageBounce) Bounce(n > 1 ? 0.55 : 1);
+        if (n == 1 && S.GlowEnabled && S.GlowNotify) GlowShot("bloom", _msgToastColor);
     }
 
     private void GlowShot(string kind, Color natural)

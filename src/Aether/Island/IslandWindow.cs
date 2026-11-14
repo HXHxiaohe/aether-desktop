@@ -85,6 +85,7 @@ public sealed partial class IslandWindow : Window
     // music page
     private readonly FrameworkElement _mBody, _mEmpty;
     private readonly Image _mCover;
+    private readonly Border _mCoverBox;
     private readonly TextBlock _mTitle, _mSub, _mLyric, _mPos, _mDur, _mPlay, _mApp;
     private readonly Slider _mProgress;
     private readonly Rectangle[] _mBars;
@@ -318,7 +319,8 @@ public sealed partial class IslandWindow : Window
         mTop.ColumnDefinitions.Add(new ColumnDefinition());
         mTop.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _mCover = new Image { Stretch = Stretch.UniformToFill };
-        mTop.Children.Add(Rounded(_mCover, 82, 16));
+        _mCoverBox = Rounded(_mCover, 82, 16);
+        mTop.Children.Add(BuildCoverRing(_mCoverBox)); // glow ring + flip live in IslandWindow.Motion.cs
         var mInfo = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 10, 0) };
         _mTitle = Text("", 17, FontWeights.SemiBold);
         _mTitle.FontFamily = Display;
@@ -1050,7 +1052,7 @@ public sealed partial class IslandWindow : Window
     {
         var m = MediaService.Current;
         var art = m?.Cover ?? (m is null ? null : MediaAppIcon(m.SourceApp));
-        _cCover.Source = _mCover.Source = art;
+        SetCoverArt(m, art); // flips to the new cover on a track change
         _layoutDirty = true;
         _mBody.Visibility = HasMedia ? Visibility.Visible : Visibility.Collapsed;
         _mEmpty.Visibility = HasMedia ? Visibility.Collapsed : Visibility.Visible;
@@ -1062,7 +1064,7 @@ public sealed partial class IslandWindow : Window
             _mPlay.Text = m.Playing ? "" : "";
         }
         var newColor = m?.Cover is BitmapSource bs ? WallpaperColor.FromImage(bs) : null;
-        if (newColor != _coverColor) { _coverColor = newColor; ApplySkin(); }
+        if (newColor != _coverColor) { _coverColor = newColor; ApplySkin(); UpdateCoverRingColors(); }
         LyricsService.OnTrack(HasMedia ? m : null);
         UpdateProgress();
         UpdateCompact();
@@ -1666,6 +1668,7 @@ public sealed partial class IslandWindow : Window
         }
         if (!AudioService.SpectrumRunning) AudioService.Spectrum.Decay();
         AudioService.Spectrum.Read(_levels);
+        CoverRingFrame();
         if (_mode == Mode.Compact) Paint(_cBars, 16, 3, 3);
         else if (_mode == Mode.Toast) Paint(_toastBars, 24, 3, 3);
         else if (_mode == Mode.Expanded) Paint(_mBars, 22, 3, 4);

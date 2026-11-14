@@ -118,7 +118,10 @@ public partial class SettingsWindow
         Row("放歌时流动", null, Switch(G.GlowMusic, v => G.GlowMusic = v));
         Row("消息亮起", "微信 / QQ / 通知 / 验证码弹出时，按应用颜色闪一下并保持柔光", Switch(G.GlowNotify, v => G.GlowNotify = v));
         Row("收纳与释放", "文件或截图放进置物架时两道光汇合；拖出时反向散开", Switch(G.GlowShelf, v => G.GlowShelf = v));
-        Row("减少动态效果", "流动的光改为静止柔光，动画更短", Switch(G.ReduceMotion, v => G.ReduceMotion = v));
+        Row("消息轻弹", "新消息时灵动岛轻轻一压再弹回；同一个软件连着来的消息合并成「N 条新消息」", Switch(G.MessageBounce, v => G.MessageBounce = v));
+        Row("封面光环", "音乐页的封面周围有一圈封面颜色的光，随节奏转动、明暗", Switch(G.CoverRing, v => G.CoverRing = v));
+        Row("切歌翻片", "切歌时封面像卡片一样翻到下一首", Switch(G.CoverFlip, v => G.CoverFlip = v));
+        Row("减少动态效果", "流动的光改为静止柔光，动画更短，关掉轻弹 / 光环 / 翻片", Switch(G.ReduceMotion, v => G.ReduceMotion = v));
 
         // ---- preview
         var prev = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
